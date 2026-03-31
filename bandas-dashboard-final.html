@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bandas LATAM — Lead Machine</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0C0C0C;--surface:#141414;--surface2:#1C1C1C;
+  --border:#262626;--border2:#333;
+  --text:#EFEFEF;--muted:#666;--muted2:#999;
+  --lime:#C8F135;--lime2:#A8D620;
+  --green:#34D399;--red:#F87171;--orange:#FB923C;--blue:#60A5FA;
+}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+
+/* ── LOGIN ── */
+#loginWrap{min-height:100vh;display:flex;align-items:center;justify-content:center}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;width:340px}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.login-logo-icon{width:42px;height:42px;background:var(--lime);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.login-logo-text{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.04em;color:var(--text)}
+.login-logo-sub{font-size:11px;color:var(--muted2);margin-top:1px}
+.login-box label{display:block;font-size:12px;color:var(--muted2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.login-box input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:'Barlow',sans-serif;font-size:14px;outline:none;margin-bottom:14px}
+.login-box input:focus{border-color:var(--lime)}
+.btn-primary{width:100%;background:var(--lime);border:none;border-radius:8px;padding:11px;font-family:'Barlow',sans-serif;font-size:14px;font-weight:600;color:#0C0C0C;cursor:pointer;transition:.15s}
+.btn-primary:hover{background:var(--lime2)}
+.login-err{font-size:12px;color:var(--red);text-align:center;margin-top:10px;display:none}
+
+/* ── LAYOUT ── */
+#appWrap{display:none;min-height:100vh;flex-direction:column}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:52px;flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.topbar-logo{display:flex;align-items:center;gap:8px}
+.topbar-icon{width:30px;height:30px;background:var(--lime);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.topbar-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.03em}
+.topbar-title span{color:var(--lime)}
+.nav{display:flex;gap:2px}
+.nav-btn{background:none;border:none;color:var(--muted2);font-family:'Barlow',sans-serif;font-size:13px;font-weight:500;padding:6px 14px;border-radius:7px;cursor:pointer;transition:.1s}
+.nav-btn:hover{color:var(--text);background:var(--surface2)}
+.nav-btn.active{color:var(--lime);background:rgba(200,241,53,.1)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.live-label{font-size:11px;color:var(--muted2)}
+.logout-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:5px 12px;color:var(--muted2);font-family:'Barlow',sans-serif;font-size:12px;cursor:pointer}
+.logout-btn:hover{color:var(--text);border-color:var(--border2)}
+
+.main{flex:1;padding:22px 24px;overflow-y:auto}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+.stat-label{font-size:11px;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-family:'Barlow Condensed',sans-serif}
+.stat-num{font-family:'Bebas Neue',sans-serif;font-size:38px;line-height:1;letter-spacing:.02em}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.stat-card.s-total .stat-num{color:var(--text)}
+.stat-card.s-pending .stat-num{color:var(--orange)}
+.stat-card.s-contacted .stat-num{color:var(--lime)}
+
+/* ── TWO COL ── */
+.two-col{display:grid;grid-template-columns:1fr 1.6fr;gap:14px;margin-bottom:20px}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.card-head{padding:14px 16px;border-bottom:1px solid var(--border);font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted2);display:flex;align-items:center;justify-content:space-between}
+.card-body{padding:16px}
+
+/* ── COUNTRY CHART ── */
+.c-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px}
+.c-name{min-width:40px;color:var(--muted2);font-weight:600;font-family:'Barlow Condensed',sans-serif}
+.c-bar-bg{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.c-bar{height:100%;background:var(--lime);border-radius:3px;transition:width .5s ease}
+.c-n{min-width:24px;text-align:right;font-weight:600;font-size:12px}
+
+/* ── ACTIVITY ── */
+.act-item{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px}
+.act-item:last-child{border-bottom:none}
+.act-user{color:var(--text);font-weight:500}
+.act-date{font-size:11px;color:var(--muted)}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em}
+.badge.pending{background:rgba(251,146,60,.15);color:var(--orange)}
+.badge.contacted{background:rgba(200,241,53,.12);color:var(--lime)}
+.badge.replied{background:rgba(96,165,250,.15);color:var(--blue)}
+.cbadge{display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:1px 7px;font-size:11px;color:var(--muted2);font-weight:600}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--surface2);padding:9px 14px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-family:'Barlow Condensed',sans-serif;font-weight:600;white-space:nowrap}
+tbody td{padding:10px 14px;border-bottom:1px solid rgba(38,38,38,.6);color:var(--text);white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(255,255,255,.02)}
+.ig-link{color:var(--blue);text-decoration:none;font-size:12px}
+.ig-link:hover{text-decoration:underline}
+
+/* ── FILTERS ── */
+.filters{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.f-btn{background:none;border:1px solid var(--border);border-radius:20px;padding:4px 13px;font-size:12px;color:var(--muted2);cursor:pointer;font-family:'Barlow',sans-serif;transition:.1s}
+.f-btn:hover{border-color:var(--border2);color:var(--text)}
+.f-btn.active{background:var(--surface2);border-color:var(--border2);color:var(--text)}
+
+/* ── RUN TAB ── */
+.run-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.run-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px}
+.run-card h3{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.03em;color:var(--text);margin-bottom:6px}
+.run-card p{font-size:13px;color:var(--muted2);line-height:1.6;margin-bottom:14px}
+.run-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.run-controls input{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;width:80px;outline:none}
+.run-controls input:focus{border-color:var(--lime)}
+.btn-run{background:var(--lime);border:none;border-radius:7px;padding:8px 16px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;color:#0C0C0C;cursor:pointer;transition:.1s}
+.btn-run:hover{background:var(--lime2)}
+.btn-run:disabled{background:var(--surface2);color:var(--muted);cursor:not-allowed}
+.run-status{font-size:12px;color:var(--muted2);margin-top:10px;display:none;align-items:center;gap:6px}
+.run-status.show{display:flex}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--orange);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.sched-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px}
+.sched-card h3{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.03em;margin-bottom:14px}
+.sched-row{display:flex;align-items:center;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+.sched-label{font-size:13px;color:var(--muted2);min-width:120px}
+.sched-controls{display:flex;gap:8px;align-items:center}
+.sched-controls input[type=time]{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;outline:none}
+.sched-controls input[type=time]:focus{border-color:var(--lime)}
+.toggle{position:relative;display:inline-flex;width:36px;height:20px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--surface2);border:1px solid var(--border);border-radius:20px;transition:.2s}
+.toggle-slider:before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:var(--muted);border-radius:50%;transition:.2s}
+.toggle input:checked + .toggle-slider{background:rgba(200,241,53,.2);border-color:var(--lime)}
+.toggle input:checked + .toggle-slider:before{transform:translateX(16px);background:var(--lime)}
+.sched-note{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6;padding:10px 14px;background:var(--surface2);border-radius:7px;border-left:2px solid var(--border2)}
+
+.msg-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px}
+.msg-card h3{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.03em;margin-bottom:8px}
+.spintax{font-size:12px;color:var(--muted2);margin-bottom:10px;line-height:1.7}
+.spintax code{background:var(--surface2);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:11px;color:var(--lime)}
+textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;resize:vertical;outline:none;line-height:1.6}
+textarea:focus{border-color:var(--lime)}
+
+/* ── CONFIG TAB ── */
+.cfg-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px}
+.cfg-card h3{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.03em;margin-bottom:14px;color:var(--text)}
+.cfg-field{margin-bottom:12px}
+.cfg-field label{display:block;font-size:11px;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;font-family:'Barlow Condensed',sans-serif;font-weight:600}
+.cfg-field input,.cfg-field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:monospace;font-size:12px;outline:none}
+.cfg-field input:focus,.cfg-field textarea:focus{border-color:var(--lime)}
+.cfg-field textarea{height:90px;resize:vertical}
+.btn-save{background:var(--lime);border:none;border-radius:7px;padding:9px 20px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;color:#0C0C0C;cursor:pointer}
+.btn-save:hover{background:var(--lime2)}
+.saved-toast{font-size:12px;color:var(--green);margin-left:10px;display:none}
+
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted2)}
+
+.empty{text-align:center;padding:32px;color:var(--muted);font-size:13px}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── WEBHOOK MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:100;display:none}
+.modal-bg.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:24px;max-width:480px;width:90%}
+.modal h3{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.03em;margin-bottom:12px}
+.modal p{font-size:13px;color:var(--muted2);line-height:1.7;margin-bottom:16px}
+.modal .btn-save{width:100%}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginWrap">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">🎸</div>
+      <div>
+        <div class="login-logo-text">Bandas LATAM</div>
+        <div class="login-logo-sub">Lead Machine Dashboard</div>
+      </div>
+    </div>
+    <label>Usuario</label>
+    <input type="text" id="loginUser" placeholder="admin" />
+    <label>Contraseña</label>
+    <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="btn-primary" onclick="doLogin()">Ingresar</button>
+    <div class="login-err" id="loginErr">Contraseña incorrecta</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appWrap" style="display:none;flex-direction:column;min-height:100vh">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">
+        <div class="topbar-icon">🎸</div>
+        <div class="topbar-title">Bandas <span>LATAM</span></div>
+      </div>
+      <div class="nav">
+        <button class="nav-btn active" onclick="showTab('dashboard',this)">Dashboard</button>
+        <button class="nav-btn" onclick="showTab('run',this)">Ejecución</button>
+        <button class="nav-btn" onclick="showTab('config',this)">Configuración</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="live-dot" id="connDot" style="background:var(--muted)"></div>
+      <span class="live-label" id="connLabel">sin conectar</span>
+      <button class="logout-btn" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- DASHBOARD TAB -->
+    <div class="tab-panel active" id="tab-dashboard">
+      <div class="stats-row">
+        <div class="stat-card s-total">
+          <div class="stat-label">Total leads</div>
+          <div class="stat-num" id="s-total">—</div>
+          <div class="stat-sub">en base de datos</div>
+        </div>
+        <div class="stat-card s-pending">
+          <div class="stat-label">Pendientes</div>
+          <div class="stat-num" id="s-pending">—</div>
+          <div class="stat-sub">sin contactar</div>
+        </div>
+        <div class="stat-card s-contacted">
+          <div class="stat-label">Contactados</div>
+          <div class="stat-num" id="s-contacted">—</div>
+          <div class="stat-sub">DM enviado</div>
+        </div>
+      </div>
+
+      <div class="two-col" style="margin-bottom:20px">
+        <div class="card">
+          <div class="card-head">Por país</div>
+          <div class="card-body" id="countryChart"><div class="empty">Cargando...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-head">Actividad reciente</div>
+          <div id="activityFeed"><div class="empty">Sin actividad</div></div>
+        </div>
+      </div>
+
+      <div class="section-head">
+        <span class="section-title">Leads</span>
+        <div class="filters">
+          <button class="f-btn active" onclick="filterLeads('all',this)">Todos</button>
+          <button class="f-btn" onclick="filterLeads('pending',this)">Pendientes</button>
+          <button class="f-btn" onclick="filterLeads('contacted',this)">Contactados</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Nombre</th>
+                <th>País</th>
+                <th>Categoría IG</th>
+                <th>Followers</th>
+                <th>Score</th>
+                <th>Estado</th>
+                <th>Enviado</th>
+                <th>Perfil</th>
+              </tr>
+            </thead>
+            <tbody id="leadsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RUN TAB -->
+    <div class="tab-panel" id="tab-run">
+
+      <div class="msg-card">
+        <h3>Mensaje de contacto</h3>
+        <div class="spintax">
+          Usá variaciones para evitar detección spam: <code>{Hola|Hey|Buenas}</code> · cada DM enviará una variante aleatoria.
+        </div>
+        <textarea id="dmMessage" rows="4" placeholder="{Hola|Hey|Buenas}, somos [nombre del cliente]...&#10;&#10;Tu mensaje aquí."></textarea>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
+          <button class="btn-save" onclick="saveMessage()">Guardar mensaje</button>
+          <span class="saved-toast" id="msgToast">✓ Guardado</span>
+        </div>
+      </div>
+
+      <div class="run-grid">
+        <div class="run-card">
+          <h3>Flow 01 — Búsqueda</h3>
+          <p>Scraping de Instagram por hashtags. Filtra bandas reales y guarda en el Sheet.</p>
+          <div class="run-controls">
+            <div>
+              <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Offset</div>
+              <input type="number" id="f1Offset" value="0" min="0" />
+            </div>
+            <div style="margin-top:16px">
+              <button class="btn-run" id="btnFlow1" onclick="runFlow1()">Iniciar</button>
+            </div>
+          </div>
+          <div class="run-status" id="status1">
+            <div class="pulse"></div> Ejecutando scraping...
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px">
+            Offset actual del config: <span id="currentOffset" style="color:var(--lime)">0</span>
+          </div>
+        </div>
+
+        <div class="run-card">
+          <h3>Flow 02 — Enviar DMs</h3>
+          <p>Toma los leads pendientes y envía el mensaje. Usa el mensaje guardado arriba.</p>
+          <div class="run-controls">
+            <div>
+              <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Máx DMs</div>
+              <input type="number" id="f2MaxDms" value="5" min="1" max="25" />
+            </div>
+            <div style="margin-top:16px">
+              <button class="btn-run" id="btnFlow2" onclick="runFlow2()">Enviar</button>
+            </div>
+          </div>
+          <div class="run-status" id="status2">
+            <div class="pulse"></div> Enviando DMs...
+          </div>
+        </div>
+      </div>
+
+      <div class="sched-card">
+        <h3>Programación automática</h3>
+        <div class="sched-row">
+          <span class="sched-label">Flow 01 — Scraping</span>
+          <div class="sched-controls">
+            <label class="toggle"><input type="checkbox" id="sched1Active" /><span class="toggle-slider"></span></label>
+            <input type="time" id="sched1Time" value="08:00" />
+            <span style="font-size:12px;color:var(--muted2)">todos los días</span>
+          </div>
+        </div>
+        <div class="sched-row">
+          <span class="sched-label">Flow 02 — DMs</span>
+          <div class="sched-controls">
+            <label class="toggle"><input type="checkbox" id="sched2Active" /><span class="toggle-slider"></span></label>
+            <input type="time" id="sched2Time" value="10:00" />
+            <span style="font-size:12px;color:var(--muted2)">todos los días</span>
+          </div>
+        </div>
+        <button class="btn-save" onclick="saveSched()" style="margin-top:6px">Guardar programación</button>
+        <div class="sched-note" style="margin-top:12px">
+          ⚠️ La programación se guarda y se envía a n8n. Para que funcione, n8n debe tener el
+          webhook <code>/set-schedule</code> activo (ver guía de webhooks). Si preferís configurarlo
+          directo en n8n, usá un nodo <strong>Schedule Trigger</strong> con Cron o intervalos.
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CONFIG TAB -->
+    <div class="tab-panel" id="tab-config">
+
+      <div class="cfg-card">
+        <h3>Conexión n8n</h3>
+        <div class="cfg-field">
+          <label>URL base de webhooks</label>
+          <input type="text" id="cfg-n8n" placeholder="https://mi-vps.com:5678/webhook" />
+        </div>
+        <button class="btn-save" onclick="saveCfg('n8n')">Guardar</button>
+        <span class="saved-toast" id="toast-n8n">✓</span>
+        <div style="margin-top:10px;font-size:12px;color:var(--muted2)">
+          El dashboard llama a: <code style="color:var(--lime)">[URL]/leads</code>, <code style="color:var(--lime)">[URL]/run-flow1</code>, <code style="color:var(--lime)">[URL]/run-flow2</code>
+        </div>
+      </div>
+
+      <div class="cfg-card">
+        <h3>Credenciales Instagram</h3>
+        <div class="cfg-field">
+          <label>Session ID (cookie sessionid)</label>
+          <input type="text" id="cfg-session" placeholder="48156086874%3Axxx" />
+        </div>
+        <div class="cfg-field">
+          <label>CSRF Token (cookie csrftoken)</label>
+          <input type="text" id="cfg-csrf" placeholder="0zHNQtQxxx" />
+        </div>
+        <div class="cfg-field">
+          <label>Cookies completas (JSON de EditThisCookie)</label>
+          <textarea id="cfg-cookies" placeholder='[{"name":"sessionid","value":"...","domain":".instagram.com",...}]'></textarea>
+        </div>
+        <button class="btn-save" onclick="saveCfg('ig')">Guardar credenciales IG</button>
+        <span class="saved-toast" id="toast-ig">✓</span>
+        <div style="margin-top:10px;font-size:12px;color:var(--muted2)">
+          Las cookies se guardan en este dispositivo (localStorage). Para usarlas en otro dispositivo, copialas manualmente.
+        </div>
+      </div>
+
+      <div class="cfg-card">
+        <h3>Parámetros Apify</h3>
+        <div class="cfg-field">
+          <label>Apify API Token</label>
+          <input type="text" id="cfg-apify" placeholder="apify_api_xxx" />
+        </div>
+        <div class="cfg-field">
+          <label>Google Sheet ID</label>
+          <input type="text" id="cfg-sheet" placeholder="148Q0yaGAF5Y23r..." />
+        </div>
+        <button class="btn-save" onclick="saveCfg('apify')">Guardar</button>
+        <span class="saved-toast" id="toast-apify">✓</span>
+      </div>
+
+      <div class="cfg-card">
+        <h3>Acceso al dashboard</h3>
+        <div class="cfg-field">
+          <label>Nueva contraseña</label>
+          <input type="password" id="cfg-pass" placeholder="mínimo 4 caracteres" />
+        </div>
+        <button class="btn-save" onclick="changePass()">Cambiar contraseña</button>
+        <span class="saved-toast" id="toast-pass">✓ Actualizada</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_PASS = 'bandas2025';
+let allLeads = [];
+let currentFilter = 'all';
+
+// ── STORAGE ──
+function ls(k, v) {
+  const key = 'blm_' + k;
+  if (v !== undefined) {
+    localStorage.setItem(key, typeof v === 'object' ? JSON.stringify(v) : String(v));
+    return;
+  }
+  const r = localStorage.getItem(key);
+  if (r === null) return null;
+  try { return JSON.parse(r); } catch(e) { return r; }
+}
+
+// ── LOGIN ──
+function doLogin() {
+  const p = document.getElementById('loginPass').value;
+  const stored = ls('password') || DEFAULT_PASS;
+  if (p === stored) {
+    ls('loggedIn', true);
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('appWrap').style.display = 'flex';
+    loadConfig();
+    loadData();
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
+}
+
+function doLogout() {
+  ls('loggedIn', false);
+  document.getElementById('loginWrap').style.display = 'flex';
+  document.getElementById('appWrap').style.display = 'none';
+  document.getElementById('loginPass').value = '';
+}
+
+// ── TABS ──
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'config') loadConfig();
+}
+
+// ── DATA ──
+function loadData() {
+  const url = ls('n8nUrl');
+  if (!url) { renderDemo(); return; }
+  setConn(false);
+  fetch(url + '/leads', { signal: AbortSignal.timeout(8000) })
+    .then(r => r.json())
+    .then(data => {
+      allLeads = Array.isArray(data) ? data : (data.leads || []);
+      setConn(true);
+      renderAll();
+    })
+    .catch(() => { renderDemo(); });
+}
+
+function setConn(ok) {
+  const dot = document.getElementById('connDot');
+  const lbl = document.getElementById('connLabel');
+  dot.style.background = ok ? 'var(--green)' : 'var(--muted)';
+  lbl.textContent = ok ? 'conectado' : 'sin conectar';
+}
+
+function renderDemo() {
+  allLeads = [
+    {username:'rockband_arg',full_name:'Los Roques',country_tag:'ARG',ig_category:'Musician/Band',followers:4200,filter_score:5,status:'contacted',dm_sent_date:'2026-03-30',profile_url:'https://instagram.com/rockband_arg'},
+    {username:'bluestrio_mex',full_name:'Blue Trio MX',country_tag:'MEX',ig_category:'Musician/Band',followers:1800,filter_score:4,status:'contacted',dm_sent_date:'2026-03-29',profile_url:'https://instagram.com/bluestrio_mex'},
+    {username:'indie_chi_band',full_name:'Viento Sur',country_tag:'CHI',ig_category:'Artist',followers:900,filter_score:3,status:'pending',dm_sent_date:'',profile_url:'https://instagram.com/indie_chi_band'},
+    {username:'metalcore_col',full_name:'Ferrum',country_tag:'COL',ig_category:'Rock Band',followers:6100,filter_score:6,status:'pending',dm_sent_date:'',profile_url:'https://instagram.com/metalcore_col'},
+    {username:'jazzquintet_uru',full_name:'Jazztet Mvd',country_tag:'URU',ig_category:'Musician/Band',followers:2300,filter_score:4,status:'contacted',dm_sent_date:'2026-03-31',profile_url:'https://instagram.com/jazzquintet_uru'},
+    {username:'punkrock_peru',full_name:'Caos Total',country_tag:'PER',ig_category:'',followers:780,filter_score:2,status:'pending',dm_sent_date:'',profile_url:'https://instagram.com/punkrock_peru'},
+  ];
+  renderAll();
+}
+
+function renderAll() {
+  renderStats();
+  renderLeads(currentFilter);
+  renderCountry();
+  renderActivity();
+}
+
+function renderStats() {
+  const t = allLeads.length;
+  const p = allLeads.filter(l => l.status === 'pending').length;
+  const c = allLeads.filter(l => l.status === 'contacted').length;
+  document.getElementById('s-total').textContent = t;
+  document.getElementById('s-pending').textContent = p;
+  document.getElementById('s-contacted').textContent = c;
+}
+
+function renderCountry() {
+  const counts = {};
+  allLeads.forEach(l => counts[l.country_tag] = (counts[l.country_tag]||0)+1);
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  const max = sorted[0]?.[1]||1;
+  const html = sorted.map(([c,n]) =>
+    `<div class="c-row">
+      <span class="c-name">${c}</span>
+      <div class="c-bar-bg"><div class="c-bar" style="width:${Math.round(n/max*100)}%"></div></div>
+      <span class="c-n">${n}</span>
+    </div>`
+  ).join('');
+  document.getElementById('countryChart').innerHTML = html || '<div class="empty">Sin datos</div>';
+}
+
+function renderActivity() {
+  const recent = allLeads.filter(l=>l.status!=='pending'&&l.dm_sent_date).sort((a,b)=>b.dm_sent_date.localeCompare(a.dm_sent_date)).slice(0,6);
+  if (!recent.length) { document.getElementById('activityFeed').innerHTML='<div class="empty">Sin actividad</div>'; return; }
+  document.getElementById('activityFeed').innerHTML = recent.map(l=>
+    `<div class="act-item">
+      <div><span class="act-user">@${l.username}</span> <span class="cbadge">${l.country_tag}</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge ${l.status}">${l.status==='contacted'?'Contactado':'DM'}</span>
+        <span class="act-date">${l.dm_sent_date||''}</span>
+      </div>
+    </div>`
+  ).join('');
+}
+
+function filterLeads(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.f-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLeads(f);
+}
+
+function renderLeads(f) {
+  const list = f==='all' ? allLeads : allLeads.filter(l=>l.status===f);
+  const lbl = {pending:'Pendiente',contacted:'Contactado',replied:'Respondió'};
+  if (!list.length) { document.getElementById('leadsBody').innerHTML='<tr><td colspan="9" class="empty">Sin resultados</td></tr>'; return; }
+  document.getElementById('leadsBody').innerHTML = list.map(l =>
+    `<tr>
+      <td>@${l.username||''}</td>
+      <td>${l.full_name||'-'}</td>
+      <td><span class="cbadge">${l.country_tag||''}</span></td>
+      <td style="font-size:12px;color:var(--muted2)">${l.ig_category||'-'}</td>
+      <td>${Number(l.followers||0).toLocaleString()}</td>
+      <td><span style="font-size:12px;color:${(l.filter_score||0)>=4?'var(--lime)':'var(--muted2)'}">${l.filter_score||'-'}</span></td>
+      <td><span class="badge ${l.status||'pending'}">${lbl[l.status]||l.status}</span></td>
+      <td style="font-size:12px;color:var(--muted2)">${l.dm_sent_date||'-'}</td>
+      <td><a class="ig-link" href="${l.profile_url||'#'}" target="_blank">Ver →</a></td>
+    </tr>`
+  ).join('');
+}
+
+// ── RUN FLOWS ──
+function runFlow1() {
+  const url = ls('n8nUrl');
+  if (!url) { alert('Configurá la URL de n8n en Configuración primero.'); return; }
+  const offset = parseInt(document.getElementById('f1Offset').value)||0;
+  const btn = document.getElementById('btnFlow1');
+  btn.disabled = true;
+  document.getElementById('status1').classList.add('show');
+  fetch(url + '/run-flow1', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ offset, hashtags_batch: 3, results_per_hashtag: 30 })
+  })
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('status1').classList.remove('show');
+    btn.disabled = false;
+    const nextOff = (offset+3);
+    ls('hashtagOffset', nextOff);
+    document.getElementById('f1Offset').value = nextOff;
+    document.getElementById('currentOffset').textContent = nextOff;
+    alert('Flow 01 completado. Próximo offset: ' + nextOff);
+    loadData();
+  })
+  .catch(()=>{ document.getElementById('status1').classList.remove('show'); btn.disabled=false; alert('Error al ejecutar. Verificá que n8n esté corriendo y el webhook /run-flow1 esté activo.'); });
+}
+
+function runFlow2() {
+  const url = ls('n8nUrl');
+  if (!url) { alert('Configurá la URL de n8n en Configuración primero.'); return; }
+  const maxDms = parseInt(document.getElementById('f2MaxDms').value)||5;
+  const msg = document.getElementById('dmMessage').value || ls('dmMessage') || '';
+  if (!msg) { alert('Escribí el mensaje de contacto antes de enviar DMs.'); return; }
+  const btn = document.getElementById('btnFlow2');
+  btn.disabled = true;
+  document.getElementById('status2').classList.add('show');
+  fetch(url + '/run-flow2', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ max_dms: maxDms, message: msg })
+  })
+  .then(r => r.json())
+  .then(()=>{ document.getElementById('status2').classList.remove('show'); btn.disabled=false; alert('Flow 02 completado. Revisá el Sheet.'); loadData(); })
+  .catch(()=>{ document.getElementById('status2').classList.remove('show'); btn.disabled=false; alert('Error al ejecutar. Verificá n8n.'); });
+}
+
+function saveMessage() {
+  const msg = document.getElementById('dmMessage').value;
+  ls('dmMessage', msg);
+  const t = document.getElementById('msgToast');
+  t.style.display='inline';
+  setTimeout(()=>t.style.display='none', 2000);
+}
+
+function saveSched() {
+  const url = ls('n8nUrl');
+  const s1 = { active: document.getElementById('sched1Active').checked, time: document.getElementById('sched1Time').value };
+  const s2 = { active: document.getElementById('sched2Active').checked, time: document.getElementById('sched2Time').value };
+  ls('sched1', s1); ls('sched2', s2);
+  if (url) {
+    fetch(url + '/set-schedule', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ flow1: s1, flow2: s2 }) })
+      .then(()=>alert('Programación guardada y enviada a n8n.'))
+      .catch(()=>alert('Guardado localmente. No se pudo enviar a n8n (webhook /set-schedule no encontrado).'));
+  } else { alert('Guardado localmente.'); }
+}
+
+// ── CONFIG ──
+function loadConfig() {
+  const map = { 'n8n':'n8nUrl', 'session':'igSession', 'csrf':'igCsrf', 'cookies':'igCookies', 'apify':'apifyToken', 'sheet':'sheetId' };
+  Object.entries(map).forEach(([id, key]) => {
+    const el = document.getElementById('cfg-' + id);
+    if (!el) return;
+    const v = ls(key);
+    if (v) el.value = typeof v === 'object' ? JSON.stringify(v, null, 2) : v;
+  });
+  const msg = ls('dmMessage');
+  if (msg) document.getElementById('dmMessage').value = msg;
+  const off = ls('hashtagOffset') || 0;
+  document.getElementById('f1Offset').value = off;
+  document.getElementById('currentOffset').textContent = off;
+  const s1 = ls('sched1');
+  if (s1) { document.getElementById('sched1Active').checked = s1.active; document.getElementById('sched1Time').value = s1.time || '08:00'; }
+  const s2 = ls('sched2');
+  if (s2) { document.getElementById('sched2Active').checked = s2.active; document.getElementById('sched2Time').value = s2.time || '10:00'; }
+}
+
+function saveCfg(group) {
+  const map = {
+    n8n: [['n8n','n8nUrl']],
+    ig: [['session','igSession'],['csrf','igCsrf'],['cookies','igCookies']],
+    apify: [['apify','apifyToken'],['sheet','sheetId']]
+  };
+  (map[group]||[]).forEach(([id,key]) => {
+    const el = document.getElementById('cfg-' + id);
+    if (el && el.value) ls(key, el.value);
+  });
+  const t = document.getElementById('toast-' + group);
+  if (t) { t.style.display='inline'; setTimeout(()=>t.style.display='none',2000); }
+}
+
+function changePass() {
+  const p = document.getElementById('cfg-pass').value;
+  if (p.length < 4) { alert('Mínimo 4 caracteres.'); return; }
+  ls('password', p);
+  document.getElementById('cfg-pass').value = '';
+  const t = document.getElementById('toast-pass');
+  t.style.display='inline'; setTimeout(()=>t.style.display='none',2000);
+}
+
+// ── INIT ──
+if (ls('loggedIn') === true) {
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('appWrap').style.display = 'flex';
+  loadConfig();
+  loadData();
+} else {
+  renderDemo();
+}
+</script>
+</body>
+</html>
