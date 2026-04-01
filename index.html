@@ -213,6 +213,7 @@ textarea:focus{border-color:var(--lime)}
     <div class="topbar-right">
       <div class="live-dot" id="connDot" style="background:var(--muted)"></div>
       <span class="live-label" id="connLabel">sin conectar</span>
+      <button class="logout-btn" onclick="loadData()">↻ Actualizar</button>
       <button class="logout-btn" onclick="doLogout()">Salir</button>
     </div>
   </div>
@@ -479,15 +480,20 @@ function showTab(name, btn) {
 // ── DATA ──
 function loadData() {
   const base = ls('n8nUrl') || FALLBACK_N8N;
+  document.getElementById('connLabel').textContent = 'conectando...';
   setConn(false);
   fetch(base + '/leads', { signal: AbortSignal.timeout(8000) })
-    .then(r => r.json())
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(data => {
       allLeads = Array.isArray(data) ? data : (data.leads || []);
       setConn(true);
       renderAll();
     })
-    .catch(() => { renderEmpty(); });
+    .catch(err => {
+      console.error('[loadData] Error al conectar con n8n:', err, '| URL:', base + '/leads');
+      document.getElementById('connLabel').textContent = 'error: ' + err.message;
+      renderEmpty();
+    });
 }
 
 function setConn(ok) {
@@ -687,6 +693,7 @@ function saveCfg(group) {
   });
   const t = document.getElementById('toast-' + group);
   if (t) { t.style.display='inline'; setTimeout(()=>t.style.display='none',2000); }
+  if (group === 'n8n') loadData();
 }
 
 function changePass() {
