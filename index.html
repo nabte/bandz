@@ -125,8 +125,6 @@ tbody tr:hover td{background:rgba(255,255,255,.04)}
 
 .msg-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px}
 .msg-card h3{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.03em;margin-bottom:8px}
-.spintax{font-size:13px;color:var(--muted2);margin-bottom:10px;line-height:1.7}
-.spintax code{background:var(--surface2);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:12px;color:var(--lime)}
 textarea{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:12px;color:var(--text);font-family:'Barlow',sans-serif;font-size:14px;resize:vertical;outline:none;line-height:1.6}
 textarea:focus{border-color:var(--lime)}
 
@@ -303,13 +301,21 @@ textarea:focus{border-color:var(--lime)}
 
       <div class="msg-card">
         <h3>Mensaje de contacto</h3>
-        <div class="spintax">
-          Usá variaciones para evitar detección spam: <code>{Hola|Hey|Buenas}</code> · cada DM enviará una variante aleatoria.
+        <div style="font-size:13px;color:var(--muted2);margin-bottom:10px;line-height:1.6">
+          Usá variantes con <code style="background:var(--surface2);padding:1px 6px;border-radius:4px;font-size:12px;color:var(--lime)">{opcion1|opcion2|opcion3}</code> — cada DM elige una al azar para evitar detección spam.
         </div>
-        <textarea id="dmMessage" rows="4" placeholder="{Hola|Hey|Buenas}, somos [nombre del cliente]...&#10;&#10;Tu mensaje aquí."></textarea>
-        <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
+        <textarea id="dmMessage" rows="5" placeholder="{Hola|Hey|Buenas}, somos [nombre]...&#10;&#10;Tu mensaje aquí."></textarea>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <button class="btn-save" onclick="saveMessage()">Guardar mensaje</button>
+          <button class="btn-run" style="background:var(--surface2);color:var(--text);border:1px solid var(--border2)" onclick="toggleAiPrompt()">✦ Generar con IA</button>
           <span class="saved-toast" id="msgToast">✓ Guardado</span>
+        </div>
+        <div id="aiPromptPanel" style="display:none;margin-top:14px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px">
+          <div style="font-size:12px;color:var(--muted2);margin-bottom:8px;letter-spacing:.06em;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif;font-weight:700">Prompt para ChatGPT / Claude</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Copiá esto, pegalo en la IA, completá los campos entre [ ] y pegá el resultado en el textarea.</div>
+          <textarea id="aiPromptText" rows="10" readonly style="font-size:12px;color:var(--muted2);background:var(--bg);border-color:var(--border);cursor:text;font-family:monospace"></textarea>
+          <button class="btn-save" style="margin-top:8px;width:100%" onclick="copyAiPrompt()">Copiar prompt</button>
+          <span class="saved-toast" id="promptToast" style="display:none;margin-left:0;margin-top:6px">✓ Copiado</span>
         </div>
       </div>
 
@@ -754,6 +760,47 @@ function runFlow2() {
     btn.disabled = false;
     showNotif('Error — Flow 02', 'No se pudo conectar con n8n. Verificá que /run-flow2 esté activo.', 'err', 8000);
     console.error('[runFlow2]', err);
+  });
+}
+
+const AI_PROMPT = `Necesito un mensaje de DM para Instagram para contactar bandas de rock/metal/indie en Latinoamérica.
+
+CONTEXTO DEL NEGOCIO:
+[Describí brevemente qué ofrecés: ej. "Somos una plataforma de distribución musical independiente", "Ofrecemos booking para shows en Buenos Aires", etc.]
+
+REQUISITOS DEL MENSAJE:
+- Máximo 3-4 líneas (los DMs de IG deben ser cortos)
+- Tono: cercano, directo, no corporativo
+- Usar formato SPINTAX en las partes que se puedan variar: {opcion1|opcion2|opcion3}
+- Al menos 3 bloques de variantes en distintas partes del mensaje
+- No usar emojis en exceso (máximo 1-2)
+- No sonar a spam ni a bot
+- Personalizar con el nombre de la banda si es posible (usá la variable [nombre] donde corresponda)
+
+FORMATO DE SALIDA REQUERIDO:
+Devolveme SOLO el texto del mensaje, sin explicaciones. Ejemplo de formato spintax:
+
+{Hola|Hey|Buenas} [nombre], {vi su trabajo|escuché su música|encontré su perfil} y {me pareció muy interesante|me enganchó bastante}.
+
+Somos [tu propuesta]. {¿Les interesaría|¿Estarían abiertos a} charlar?`;
+
+function toggleAiPrompt() {
+  const panel = document.getElementById('aiPromptPanel');
+  const ta = document.getElementById('aiPromptText');
+  if (panel.style.display === 'none') {
+    ta.value = AI_PROMPT;
+    panel.style.display = 'block';
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+function copyAiPrompt() {
+  const ta = document.getElementById('aiPromptText');
+  navigator.clipboard.writeText(ta.value).then(() => {
+    const t = document.getElementById('promptToast');
+    t.style.display = 'inline';
+    setTimeout(() => t.style.display = 'none', 2000);
   });
 }
 
