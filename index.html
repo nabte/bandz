@@ -429,6 +429,7 @@ textarea:focus{border-color:var(--lime)}
 
 <script>
 const DEFAULT_PASS = 'bandas2025';
+const FALLBACK_N8N = 'https://n8n-n8n.mcjhhb.easypanel.host/webhook';
 let allLeads = [];
 let currentFilter = 'all';
 
@@ -477,17 +478,16 @@ function showTab(name, btn) {
 
 // ── DATA ──
 function loadData() {
-  const url = ls('n8nUrl');
-  if (!url) { renderDemo(); return; }
+  const base = ls('n8nUrl') || FALLBACK_N8N;
   setConn(false);
-  fetch(url + '/leads', { signal: AbortSignal.timeout(8000) })
+  fetch(base + '/leads', { signal: AbortSignal.timeout(8000) })
     .then(r => r.json())
     .then(data => {
       allLeads = Array.isArray(data) ? data : (data.leads || []);
       setConn(true);
       renderAll();
     })
-    .catch(() => { renderDemo(); });
+    .catch(() => { renderEmpty(); });
 }
 
 function setConn(ok) {
@@ -497,16 +497,27 @@ function setConn(ok) {
   lbl.textContent = ok ? 'conectado' : 'sin conectar';
 }
 
-function renderDemo() {
-  allLeads = [
-    {username:'rockband_arg',full_name:'Los Roques',country_tag:'ARG',ig_category:'Musician/Band',followers:4200,filter_score:5,status:'contacted',dm_sent_date:'2026-03-30',profile_url:'https://instagram.com/rockband_arg'},
-    {username:'bluestrio_mex',full_name:'Blue Trio MX',country_tag:'MEX',ig_category:'Musician/Band',followers:1800,filter_score:4,status:'contacted',dm_sent_date:'2026-03-29',profile_url:'https://instagram.com/bluestrio_mex'},
-    {username:'indie_chi_band',full_name:'Viento Sur',country_tag:'CHI',ig_category:'Artist',followers:900,filter_score:3,status:'pending',dm_sent_date:'',profile_url:'https://instagram.com/indie_chi_band'},
-    {username:'metalcore_col',full_name:'Ferrum',country_tag:'COL',ig_category:'Rock Band',followers:6100,filter_score:6,status:'pending',dm_sent_date:'',profile_url:'https://instagram.com/metalcore_col'},
-    {username:'jazzquintet_uru',full_name:'Jazztet Mvd',country_tag:'URU',ig_category:'Musician/Band',followers:2300,filter_score:4,status:'contacted',dm_sent_date:'2026-03-31',profile_url:'https://instagram.com/jazzquintet_uru'},
-    {username:'punkrock_peru',full_name:'Caos Total',country_tag:'PER',ig_category:'',followers:780,filter_score:2,status:'pending',dm_sent_date:'',profile_url:'https://instagram.com/punkrock_peru'},
-  ];
-  renderAll();
+function renderEmpty() {
+  allLeads = [];
+  document.getElementById('s-total').textContent = '—';
+  document.getElementById('s-pending').textContent = '—';
+  document.getElementById('s-contacted').textContent = '—';
+  // country chart empty
+  const cc = document.getElementById('countryChart');
+  cc.textContent = '';
+  const ccDiv = document.createElement('div'); ccDiv.className = 'empty'; ccDiv.textContent = 'Sin datos'; cc.appendChild(ccDiv);
+  // activity feed empty
+  const af = document.getElementById('activityFeed');
+  af.textContent = '';
+  const afDiv = document.createElement('div'); afDiv.className = 'empty'; afDiv.textContent = 'Sin actividad'; af.appendChild(afDiv);
+  // leads table empty
+  const lb = document.getElementById('leadsBody');
+  lb.textContent = '';
+  const tr = document.createElement('tr'); const td = document.createElement('td');
+  td.colSpan = 9; td.className = 'empty';
+  td.textContent = 'Configurá la URL de n8n en Configuración para ver los datos';
+  tr.appendChild(td); lb.appendChild(tr);
+  setConn(false);
 }
 
 function renderAll() {
@@ -582,8 +593,7 @@ function renderLeads(f) {
 
 // ── RUN FLOWS ──
 function runFlow1() {
-  const url = ls('n8nUrl');
-  if (!url) { alert('Configurá la URL de n8n en Configuración primero.'); return; }
+  const url = ls('n8nUrl') || FALLBACK_N8N;
   const offset = parseInt(document.getElementById('f1Offset').value)||0;
   const btn = document.getElementById('btnFlow1');
   btn.disabled = true;
@@ -608,8 +618,7 @@ function runFlow1() {
 }
 
 function runFlow2() {
-  const url = ls('n8nUrl');
-  if (!url) { alert('Configurá la URL de n8n en Configuración primero.'); return; }
+  const url = ls('n8nUrl') || FALLBACK_N8N;
   const maxDms = parseInt(document.getElementById('f2MaxDms').value)||5;
   const msg = document.getElementById('dmMessage').value || ls('dmMessage') || '';
   if (!msg) { alert('Escribí el mensaje de contacto antes de enviar DMs.'); return; }
@@ -695,8 +704,6 @@ if (ls('loggedIn') === true) {
   document.getElementById('appWrap').style.display = 'flex';
   loadConfig();
   loadData();
-} else {
-  renderDemo();
 }
 </script>
 </body>
