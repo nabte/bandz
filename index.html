@@ -166,6 +166,29 @@ textarea:focus{border-color:var(--lime)}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 
+/* ── NOTIF TOAST ── */
+#notifStack{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:200;pointer-events:none}
+.notif{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;min-width:260px;max-width:340px;display:flex;gap:10px;align-items:flex-start;pointer-events:all;box-shadow:0 4px 24px rgba(0,0,0,.5);animation:notifIn .2s ease}
+@keyframes notifIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.notif.out{animation:notifOut .2s ease forwards}
+@keyframes notifOut{to{opacity:0;transform:translateY(10px)}}
+.notif-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.notif-body{flex:1}
+.notif-title{font-weight:600;font-size:13px;color:var(--text);margin-bottom:2px}
+.notif-msg{font-size:12px;color:var(--muted2);line-height:1.5}
+.notif-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0;line-height:1;flex-shrink:0}
+.notif.t-ok .notif-title{color:var(--green)}
+.notif.t-warn .notif-title{color:var(--orange)}
+.notif.t-err .notif-title{color:var(--red)}
+.notif.t-info .notif-title{color:var(--blue)}
+
+/* ── FLOW PROGRESS ── */
+.flow-progress{margin-top:10px;display:none}
+.flow-progress.show{display:block}
+.fp-bar-bg{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:6px}
+.fp-bar{height:100%;background:var(--lime);border-radius:2px;transition:width 1s linear;width:0%}
+.fp-label{font-size:11px;color:var(--muted2)}
+
 /* ── WEBHOOK MODAL ── */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:100;display:none}
 .modal-bg.show{display:flex}
@@ -195,6 +218,9 @@ textarea:focus{border-color:var(--lime)}
     <div class="login-err" id="loginErr">Contraseña incorrecta</div>
   </div>
 </div>
+
+<!-- NOTIF STACK -->
+<div id="notifStack"></div>
 
 <!-- APP -->
 <div id="appWrap" style="display:none;flex-direction:column;min-height:100vh">
@@ -267,7 +293,7 @@ textarea:focus{border-color:var(--lime)}
                 <th>Usuario</th>
                 <th>Nombre</th>
                 <th>País</th>
-                <th>Categoría IG</th>
+                <th>Bio</th>
                 <th>Followers</th>
                 <th>Score</th>
                 <th>Estado</th>
@@ -302,7 +328,10 @@ textarea:focus{border-color:var(--lime)}
           <p>Scraping de Instagram por hashtags. Filtra bandas reales y guarda en el Sheet.</p>
           <div class="run-controls">
             <div>
-              <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Offset</div>
+              <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">
+                Hashtag offset
+                <span style="color:var(--muted);font-weight:400"> — posición en la lista (avanza 3 por run)</span>
+              </div>
               <input type="number" id="f1Offset" value="0" min="0" />
             </div>
             <div style="margin-top:16px">
@@ -310,10 +339,15 @@ textarea:focus{border-color:var(--lime)}
             </div>
           </div>
           <div class="run-status" id="status1">
-            <div class="pulse"></div> Ejecutando scraping...
+            <div class="pulse"></div> <span id="status1Text">Iniciando flow...</span>
+          </div>
+          <div class="flow-progress" id="fp1">
+            <div class="fp-bar-bg"><div class="fp-bar" id="fp1Bar"></div></div>
+            <div class="fp-label" id="fp1Label">Procesando en n8n...</div>
           </div>
           <div style="font-size:11px;color:var(--muted);margin-top:8px">
-            Offset actual del config: <span id="currentOffset" style="color:var(--lime)">0</span>
+            Próximo offset: <span id="currentOffset" style="color:var(--lime)">0</span>
+            <span style="color:var(--muted)"> / 32 hashtags totales</span>
           </div>
         </div>
 
@@ -369,12 +403,13 @@ textarea:focus{border-color:var(--lime)}
       <div class="cfg-card">
         <h3>Conexión n8n</h3>
         <div class="cfg-field">
-          <label>URL base de webhooks</label>
-          <input type="text" id="cfg-n8n" placeholder="https://mi-vps.com:5678/webhook" />
+          <label>URL base de webhooks <span style="color:var(--orange);font-size:10px">— debe terminar en /webhook</span></label>
+          <input type="text" id="cfg-n8n" placeholder="https://n8n-n8n.mcjhhb.easypanel.host/webhook" />
         </div>
         <button class="btn-save" onclick="saveCfg('n8n')">Guardar</button>
         <span class="saved-toast" id="toast-n8n">✓</span>
         <div style="margin-top:10px;font-size:12px;color:var(--muted2)">
+          Ejemplo correcto: <code style="color:var(--lime)">https://n8n-n8n.mcjhhb.easypanel.host/webhook</code><br>
           El dashboard llama a: <code style="color:var(--lime)">[URL]/leads</code>, <code style="color:var(--lime)">[URL]/run-flow1</code>, <code style="color:var(--lime)">[URL]/run-flow2</code>
         </div>
       </div>
@@ -485,7 +520,13 @@ function loadData() {
   fetch(base + '/leads', { signal: AbortSignal.timeout(8000) })
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(data => {
-      allLeads = Array.isArray(data) ? data : (data.leads || []);
+      const raw = Array.isArray(data) ? data : (data.leads || []);
+      // Normalizar nombres de campos del Sheet
+      allLeads = raw.map(l => ({
+        ...l,
+        filter_score: l.filter_score ?? l['filter score'] ?? l['filter_score'] ?? '',
+        ig_category:  l.ig_category || l.businessCategoryName || ''
+      }));
       setConn(true);
       renderAll();
     })
@@ -587,7 +628,7 @@ function renderLeads(f) {
       <td>@${l.username||''}</td>
       <td>${l.full_name||'-'}</td>
       <td><span class="cbadge">${l.country_tag||''}</span></td>
-      <td style="font-size:12px;color:var(--muted2)">${l.ig_category||'-'}</td>
+      <td style="font-size:11px;color:var(--muted2);max-width:180px;white-space:normal;line-height:1.4">${(l.bio||'-').substring(0,80)}${(l.bio||'').length>80?'…':''}</td>
       <td>${Number(l.followers||0).toLocaleString()}</td>
       <td><span style="font-size:12px;color:${(l.filter_score||0)>=4?'var(--lime)':'var(--muted2)'}">${l.filter_score||'-'}</span></td>
       <td><span class="badge ${l.status||'pending'}">${lbl[l.status]||l.status}</span></td>
@@ -597,48 +638,128 @@ function renderLeads(f) {
   ).join('');
 }
 
+// ── NOTIFICACIONES ──
+let _notifTimer = null;
+function showNotif(title, msg, type, autoDismiss) {
+  // type: 'ok' | 'warn' | 'err' | 'info'
+  const icons = { ok: '✓', warn: '⏳', err: '✕', info: 'ℹ' };
+  const stack = document.getElementById('notifStack');
+  const el = document.createElement('div');
+  el.className = 'notif t-' + (type || 'info');
+
+  const icon = document.createElement('div'); icon.className = 'notif-icon'; icon.textContent = icons[type] || 'ℹ';
+  const body = document.createElement('div'); body.className = 'notif-body';
+  const ttl = document.createElement('div'); ttl.className = 'notif-title'; ttl.textContent = title;
+  const txt = document.createElement('div'); txt.className = 'notif-msg'; txt.textContent = msg;
+  const cls = document.createElement('button'); cls.className = 'notif-close'; cls.textContent = '✕';
+
+  body.appendChild(ttl); body.appendChild(txt);
+  el.appendChild(icon); el.appendChild(body); el.appendChild(cls);
+  stack.appendChild(el);
+
+  function dismiss() {
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 200);
+  }
+  cls.addEventListener('click', dismiss);
+  if (autoDismiss) setTimeout(dismiss, autoDismiss);
+  return dismiss;
+}
+
 // ── RUN FLOWS ──
+let _flow1Interval = null;
+
 function runFlow1() {
   const url = ls('n8nUrl') || FALLBACK_N8N;
-  const offset = parseInt(document.getElementById('f1Offset').value)||0;
+  const offset = parseInt(document.getElementById('f1Offset').value) || 0;
   const btn = document.getElementById('btnFlow1');
+  const statusEl = document.getElementById('status1');
+  const statusText = document.getElementById('status1Text');
+  const fp = document.getElementById('fp1');
+  const fpBar = document.getElementById('fp1Bar');
+  const fpLabel = document.getElementById('fp1Label');
+
   btn.disabled = true;
-  document.getElementById('status1').classList.add('show');
+  statusEl.classList.add('show');
+  statusText.textContent = 'Enviando a n8n...';
+
   fetch(url + '/run-flow1', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ offset, hashtags_batch: 3, results_per_hashtag: 30 })
   })
   .then(r => r.json())
-  .then(d => {
-    document.getElementById('status1').classList.remove('show');
-    btn.disabled = false;
-    const nextOff = (offset+3);
+  .then(() => {
+    // n8n responde de inmediato — el flow corre en background (~90 seg)
+    const nextOff = offset + 3 >= 32 ? 0 : offset + 3;
     ls('hashtagOffset', nextOff);
     document.getElementById('f1Offset').value = nextOff;
     document.getElementById('currentOffset').textContent = nextOff;
-    alert('Flow 01 completado. Próximo offset: ' + nextOff);
-    loadData();
+
+    statusText.textContent = 'Procesando en n8n...';
+    fp.classList.add('show');
+    fpBar.style.width = '0%';
+
+    showNotif('Flow 01 iniciado', 'Scraping corriendo en n8n. Tarda ~1-2 min. Los datos se actualizarán al terminar.', 'warn');
+
+    // Simular progreso durante 110 seg
+    const TOTAL = 110;
+    let elapsed = 0;
+    clearInterval(_flow1Interval);
+    _flow1Interval = setInterval(() => {
+      elapsed++;
+      const pct = Math.min(Math.round(elapsed / TOTAL * 100), 95);
+      fpBar.style.width = pct + '%';
+      const rem = TOTAL - elapsed;
+      fpLabel.textContent = 'Procesando en n8n... ~' + (rem > 0 ? rem + 's restantes' : 'finalizando');
+      if (elapsed >= TOTAL) {
+        clearInterval(_flow1Interval);
+        fpBar.style.width = '100%';
+        fpLabel.textContent = 'Listo — actualizando datos...';
+        statusEl.classList.remove('show');
+        fp.classList.remove('show');
+        btn.disabled = false;
+        loadData();
+        showNotif('Flow 01 completado', 'Próximo offset: ' + nextOff + ' / 32. Datos actualizados.', 'ok', 6000);
+      }
+    }, 1000);
   })
-  .catch(()=>{ document.getElementById('status1').classList.remove('show'); btn.disabled=false; alert('Error al ejecutar. Verificá que n8n esté corriendo y el webhook /run-flow1 esté activo.'); });
+  .catch(err => {
+    statusEl.classList.remove('show');
+    fp.classList.remove('show');
+    btn.disabled = false;
+    clearInterval(_flow1Interval);
+    showNotif('Error — Flow 01', 'No se pudo conectar con n8n. Verificá que el webhook /run-flow1 esté activo.', 'err', 8000);
+    console.error('[runFlow1]', err);
+  });
 }
 
 function runFlow2() {
   const url = ls('n8nUrl') || FALLBACK_N8N;
-  const maxDms = parseInt(document.getElementById('f2MaxDms').value)||5;
+  const maxDms = parseInt(document.getElementById('f2MaxDms').value) || 5;
   const msg = document.getElementById('dmMessage').value || ls('dmMessage') || '';
-  if (!msg) { alert('Escribí el mensaje de contacto antes de enviar DMs.'); return; }
+  if (!msg) { showNotif('Falta el mensaje', 'Escribí el mensaje de contacto antes de enviar DMs.', 'warn', 5000); return; }
   const btn = document.getElementById('btnFlow2');
   btn.disabled = true;
   document.getElementById('status2').classList.add('show');
   fetch(url + '/run-flow2', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ max_dms: maxDms, message: msg })
   })
   .then(r => r.json())
-  .then(()=>{ document.getElementById('status2').classList.remove('show'); btn.disabled=false; alert('Flow 02 completado. Revisá el Sheet.'); loadData(); })
-  .catch(()=>{ document.getElementById('status2').classList.remove('show'); btn.disabled=false; alert('Error al ejecutar. Verificá n8n.'); });
+  .then(() => {
+    document.getElementById('status2').classList.remove('show');
+    btn.disabled = false;
+    showNotif('Flow 02 iniciado', 'Enviando hasta ' + maxDms + ' DMs en n8n. Los datos se actualizarán en ~30 seg.', 'warn');
+    setTimeout(() => { loadData(); showNotif('Datos actualizados', 'Revisá el Sheet para ver el resultado.', 'ok', 5000); }, 35000);
+  })
+  .catch(err => {
+    document.getElementById('status2').classList.remove('show');
+    btn.disabled = false;
+    showNotif('Error — Flow 02', 'No se pudo conectar con n8n. Verificá que /run-flow2 esté activo.', 'err', 8000);
+    console.error('[runFlow2]', err);
+  });
 }
 
 function saveMessage() {
