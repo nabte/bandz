@@ -435,19 +435,7 @@ textarea:focus{border-color:var(--lime)}
         </div>
       </div>
 
-      <div class="cfg-card">
-        <h3>Parámetros Apify</h3>
-        <div class="cfg-field">
-          <label>Apify API Token</label>
-          <input type="text" id="cfg-apify" placeholder="apify_api_xxx" />
-        </div>
-        <div class="cfg-field">
-          <label>Google Sheet ID</label>
-          <input type="text" id="cfg-sheet" placeholder="148Q0yaGAF5Y23r..." />
-        </div>
-        <button class="btn-save" onclick="saveCfg('apify')">Guardar</button>
-        <span class="saved-toast" id="toast-apify">✓</span>
-      </div>
+<!-- Se eliminó la sección de parámetros de Apify para centralizar en n8n -->
 
       <div class="cfg-card">
         <h3>Acceso al dashboard</h3>
@@ -686,7 +674,11 @@ function runFlow1() {
   fetch(url + '/run-flow1', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ offset, hashtags_batch: 3, results_per_hashtag: 30 })
+    body: JSON.stringify({
+      offset,
+      hashtags_batch: 3,
+      results_per_hashtag: 30
+    })
   })
   .then(r => r.json())
   .then(() => {
