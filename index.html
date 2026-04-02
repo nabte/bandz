@@ -307,12 +307,13 @@ textarea:focus{border-color:var(--lime)}
         <textarea id="dmMessage" rows="5" placeholder="{Hola|Hey|Buenas}, somos [nombre]...&#10;&#10;Tu mensaje aquí."></textarea>
         <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <button class="btn-save" onclick="saveMessage()">Guardar mensaje</button>
+          <button class="btn-run" style="background:var(--surface2);color:var(--text);border:1px solid var(--border2);font-size:12px;padding:6px 12px" onclick="insertNombre()" title="Inserta {nombre} en la posición del cursor — el sistema lo reemplaza con el nombre real de cada banda">+ {nombre}</button>
           <button class="btn-run" style="background:var(--surface2);color:var(--text);border:1px solid var(--border2)" onclick="toggleAiPrompt()">✦ Generar con IA</button>
           <span class="saved-toast" id="msgToast">✓ Guardado</span>
         </div>
         <div id="aiPromptPanel" style="display:none;margin-top:14px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px">
           <div style="font-size:12px;color:var(--muted2);margin-bottom:8px;letter-spacing:.06em;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif;font-weight:700">Prompt para ChatGPT / Claude</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Copiá esto, pegalo en la IA, completá los campos entre [ ] y pegá el resultado en el textarea.</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Copiá esto, pegalo en la IA, completá los campos entre <code style="color:var(--lime)">[&nbsp;]</code> y pegá el resultado en el textarea. Podés usar <code style="color:var(--lime)">{nombre}</code> en el mensaje — el sistema lo reemplaza con el nombre real de cada banda.</div>
           <textarea id="aiPromptText" rows="10" readonly style="font-size:12px;color:var(--muted2);background:var(--bg);border-color:var(--border);cursor:text;font-family:monospace"></textarea>
           <button class="btn-save" style="margin-top:8px;width:100%" onclick="copyAiPrompt()">Copiar prompt</button>
           <span class="saved-toast" id="promptToast" style="display:none;margin-left:0;margin-top:6px">✓ Copiado</span>
@@ -775,14 +776,24 @@ REQUISITOS DEL MENSAJE:
 - Al menos 3 bloques de variantes en distintas partes del mensaje
 - No usar emojis en exceso (máximo 1-2)
 - No sonar a spam ni a bot
-- Personalizar con el nombre de la banda si es posible (usá la variable [nombre] donde corresponda)
+- Personalizá con el nombre de la banda usando la variable {nombre} — el sistema la reemplaza automáticamente con el nombre real de cada cuenta
 
 FORMATO DE SALIDA REQUERIDO:
-Devolveme SOLO el texto del mensaje, sin explicaciones. Ejemplo de formato spintax:
+Devolveme SOLO el texto del mensaje, sin explicaciones. Ejemplo de formato spintax con variable:
 
-{Hola|Hey|Buenas} [nombre], {vi su trabajo|escuché su música|encontré su perfil} y {me pareció muy interesante|me enganchó bastante}.
+{Hola|Hey|Buenas} {nombre}, {vi su trabajo|escuché su música|encontré su perfil} y {me pareció muy interesante|me enganchó bastante}.
 
 Somos [tu propuesta]. {¿Les interesaría|¿Estarían abiertos a} charlar?`;
+
+function insertNombre() {
+  const ta = document.getElementById('dmMessage');
+  const start = ta.selectionStart;
+  const end = ta.selectionEnd;
+  const val = ta.value;
+  ta.value = val.slice(0, start) + '{nombre}' + val.slice(end);
+  ta.selectionStart = ta.selectionEnd = start + 8;
+  ta.focus();
+}
 
 function toggleAiPrompt() {
   const panel = document.getElementById('aiPromptPanel');
