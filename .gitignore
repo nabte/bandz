@@ -1,4 +1,5 @@
 *.json
-push_error*
+push_error.txt
+push_error_test.txt
 .gemini/
 /tmp/
