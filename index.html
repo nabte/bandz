@@ -367,7 +367,30 @@ textarea:focus{border-color:var(--lime)}
         </div>
       </div>
 
-      <!-- Programación: configurar directo en n8n → Schedule Trigger de cada flow -->
+      <!-- Programación automática -->
+      <div class="run-card" style="grid-column:1/-1;margin-top:4px">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap">
+          <h3 style="margin:0">Programación automática</h3>
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;color:var(--muted2);margin-left:auto">
+            <input type="checkbox" id="schedEnabled" onchange="saveSchedule()" style="width:15px;height:15px;accent-color:var(--lime);cursor:pointer">
+            Activar schedule
+          </label>
+          <span class="saved-toast" id="schedToast" style="display:none">✓ Guardado</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div>
+            <div style="font-size:11px;color:var(--muted2);margin-bottom:6px">Flow 01 — Búsqueda <span style="color:var(--muted)">(hora Argentina)</span></div>
+            <select id="schedFlow1" onchange="saveSchedule()" style="width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:8px 10px;border-radius:8px;font-size:14px;font-family:inherit"></select>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted2);margin-bottom:6px">Flow 02 — DMs <span style="color:var(--muted)">(hora Argentina)</span></div>
+            <select id="schedFlow2" onchange="saveSchedule()" style="width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:8px 10px;border-radius:8px;font-size:14px;font-family:inherit"></select>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:10px">
+          n8n verifica cada 5 min. Requiere que <strong style="color:var(--muted2)">Flow 05 — Scheduler</strong> esté activo en n8n.
+        </div>
+      </div>
 
     </div>
 
@@ -446,6 +469,26 @@ function ls(k, v) {
 
 // Inicializar dismissed desde localStorage (después de que ls() esté definido)
 dismissedLeads = new Set(ls('dismissedLeads') || []);
+
+// Poblar selects de horario con opciones cada 30 minutos
+(function buildTimeSelects() {
+  const opts = ['— sin programar —'];
+  for (let h = 0; h < 24; h++) {
+    for (const m of [0, 30]) {
+      opts.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
+    }
+  }
+  ['schedFlow1','schedFlow2'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    opts.forEach((o, i) => {
+      const opt = document.createElement('option');
+      opt.value = i === 0 ? '' : o;
+      opt.textContent = i === 0 ? o : o;
+      sel.appendChild(opt);
+    });
+  });
+})();
 
 // ── LOGIN ──
 function doLogin() {
@@ -830,6 +873,32 @@ function saveMessage() {
   setTimeout(()=>t.style.display='none', 2000);
 }
 
+function saveSchedule() {
+  const enabled = document.getElementById('schedEnabled').checked;
+  const flow1 = document.getElementById('schedFlow1').value;
+  const flow2 = document.getElementById('schedFlow2').value;
+  ls('schedEnabled', enabled);
+  ls('schedFlow1', flow1);
+  ls('schedFlow2', flow2);
+  const base = ls('n8nUrl') || FALLBACK_N8N;
+  const saves = [
+    { key: 'schedule_enabled', value: String(enabled) },
+    { key: 'schedule_flow1_time', value: flow1 },
+    { key: 'schedule_flow2_time', value: flow2 }
+  ];
+  Promise.all(saves.map(({ key, value }) =>
+    fetch(base + '/save-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, value })
+    }).catch(() => {})
+  )).then(() => {
+    const t = document.getElementById('schedToast');
+    t.style.display = 'inline';
+    setTimeout(() => t.style.display = 'none', 2000);
+  });
+}
+
 function loadRemoteConfig() {
   const base = ls('n8nUrl') || FALLBACK_N8N;
   fetch(base + '/get-config', { signal: AbortSignal.timeout(5000) })
@@ -844,6 +913,19 @@ function loadRemoteConfig() {
         ls('hashtagOffset', off);
         document.getElementById('f1Offset').value = off;
         document.getElementById('currentOffset').textContent = off;
+      }
+      if (cfg.schedule_enabled !== undefined) {
+        const en = cfg.schedule_enabled === 'true';
+        ls('schedEnabled', en);
+        document.getElementById('schedEnabled').checked = en;
+      }
+      if (cfg.schedule_flow1_time) {
+        ls('schedFlow1', cfg.schedule_flow1_time);
+        document.getElementById('schedFlow1').value = cfg.schedule_flow1_time;
+      }
+      if (cfg.schedule_flow2_time) {
+        ls('schedFlow2', cfg.schedule_flow2_time);
+        document.getElementById('schedFlow2').value = cfg.schedule_flow2_time;
       }
     })
     .catch(() => {}); // si no hay conexión usa localStorage
@@ -864,6 +946,12 @@ function loadConfig() {
   const off = ls('hashtagOffset') || 0;
   document.getElementById('f1Offset').value = off;
   document.getElementById('currentOffset').textContent = off;
+  const schedEn = ls('schedEnabled');
+  if (schedEn !== null) document.getElementById('schedEnabled').checked = schedEn === true || schedEn === 'true';
+  const f1t = ls('schedFlow1');
+  if (f1t) { const el = document.getElementById('schedFlow1'); if (el) el.value = f1t; }
+  const f2t = ls('schedFlow2');
+  if (f2t) { const el = document.getElementById('schedFlow2'); if (el) el.value = f2t; }
 }
 
 function saveCfg(group) {
