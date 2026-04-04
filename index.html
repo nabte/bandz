@@ -330,7 +330,7 @@ textarea:focus{border-color:var(--lime)}
                 Hashtag offset
                 <span style="color:var(--muted);font-weight:400"> — posición en la lista (avanza 3 por run)</span>
               </div>
-              <input type="number" id="f1Offset" value="0" min="0" />
+              <input type="number" id="f1Offset" value="0" min="0" onchange="saveRunConfig('hashtag_offset', this.value)" />
             </div>
             <div style="margin-top:16px">
               <button class="btn-run" id="btnFlow1" onclick="runFlow1()">Iniciar</button>
@@ -355,7 +355,7 @@ textarea:focus{border-color:var(--lime)}
           <div class="run-controls">
             <div>
               <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Máx DMs</div>
-              <input type="number" id="f2MaxDms" value="60" min="1" max="200" />
+              <input type="number" id="f2MaxDms" value="60" min="1" max="200" onchange="saveRunConfig('max_dms', this.value)" />
             </div>
             <div style="margin-top:16px">
               <button class="btn-run" id="btnFlow2" onclick="runFlow2()">Enviar</button>
@@ -873,6 +873,16 @@ function saveMessage() {
   setTimeout(()=>t.style.display='none', 2000);
 }
 
+function saveRunConfig(key, value) {
+  ls(key === 'max_dms' ? 'maxDms' : 'hashtagOffset', value);
+  const base = ls('n8nUrl') || FALLBACK_N8N;
+  fetch(base + '/save-config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, value: String(value) })
+  }).catch(() => {});
+}
+
 function saveSchedule() {
   const enabled = document.getElementById('schedEnabled').checked;
   const flow1 = document.getElementById('schedFlow1').value;
@@ -913,6 +923,10 @@ function loadRemoteConfig() {
         ls('hashtagOffset', off);
         document.getElementById('f1Offset').value = off;
         document.getElementById('currentOffset').textContent = off;
+      }
+      if (cfg.max_dms !== undefined && parseInt(cfg.max_dms) > 0) {
+        ls('maxDms', cfg.max_dms);
+        document.getElementById('f2MaxDms').value = parseInt(cfg.max_dms);
       }
       if (cfg.schedule_enabled !== undefined) {
         const en = cfg.schedule_enabled === 'true';
@@ -1025,6 +1039,8 @@ function loadConfig() {
   const off = ls('hashtagOffset') || 0;
   document.getElementById('f1Offset').value = off;
   document.getElementById('currentOffset').textContent = off;
+  const maxDms = ls('maxDms');
+  if (maxDms) document.getElementById('f2MaxDms').value = parseInt(maxDms);
   const schedEn = ls('schedEnabled');
   if (schedEn !== null) document.getElementById('schedEnabled').checked = schedEn === true || schedEn === 'true';
   const f1t = ls('schedFlow1');
