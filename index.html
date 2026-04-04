@@ -93,7 +93,8 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);font
 /* ── TABLE ── */
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:14px}
-thead th{background:var(--surface2);padding:9px 14px;text-align:left;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.1em;font-family:'Barlow Condensed',sans-serif;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border2)}
+thead th{background:var(--surface2);padding:9px 14px;text-align:left;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.1em;font-family:'Barlow Condensed',sans-serif;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border2);user-select:none}
+thead th[onclick]:hover{color:var(--text);background:var(--border2)}
 tbody td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap}
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:rgba(255,255,255,.04)}
@@ -278,14 +279,14 @@ textarea:focus{border-color:var(--lime)}
           <table>
             <thead>
               <tr>
-                <th>Usuario</th>
-                <th>Nombre</th>
-                <th>País</th>
+                <th onclick="sortLeads('username')" style="cursor:pointer" title="Ordenar">Usuario <span id="sort-username" style="color:var(--lime)"></span></th>
+                <th onclick="sortLeads('full_name')" style="cursor:pointer" title="Ordenar">Nombre <span id="sort-full_name" style="color:var(--lime)"></span></th>
+                <th onclick="sortLeads('country_tag')" style="cursor:pointer" title="Ordenar">País <span id="sort-country_tag" style="color:var(--lime)"></span></th>
                 <th>Bio</th>
-                <th>Followers</th>
-                <th>Score</th>
-                <th>Estado</th>
-                <th>Enviado</th>
+                <th onclick="sortLeads('followers')" style="cursor:pointer" title="Ordenar">Followers <span id="sort-followers" style="color:var(--lime)"></span></th>
+                <th onclick="sortLeads('filter_score')" style="cursor:pointer" title="Ordenar">Score <span id="sort-filter_score" style="color:var(--lime)"></span></th>
+                <th onclick="sortLeads('status')" style="cursor:pointer" title="Ordenar">Estado <span id="sort-status" style="color:var(--lime)"></span></th>
+                <th onclick="sortLeads('dm_sent_date')" style="cursor:pointer" title="Ordenar">Enviado <span id="sort-dm_sent_date" style="color:var(--lime)"></span></th>
                 <th>Perfil</th>
                 <th></th>
               </tr>
@@ -460,6 +461,7 @@ textarea:focus{border-color:var(--lime)}
 const DEFAULT_PASS = 'bandas2025';
 const FALLBACK_N8N = 'https://bandz-n8n.aiq3il.easypanel.host/webhook';
 let allLeads = [];
+let currentSort = { col: null, dir: 1 };
 let currentFilter = 'all';
 let dismissedLeads = new Set();
 
@@ -654,9 +656,39 @@ function dismissLead(username) {
   .catch(() => showNotif('Solo oculto localmente', '@' + username + ' no se pudo actualizar en la tabla. Verificá el webhook /update-lead en n8n.', 'warn', 6000));
 }
 
+function sortLeads(col) {
+  if (currentSort.col === col) {
+    currentSort.dir *= -1;
+  } else {
+    currentSort.col = col;
+    currentSort.dir = 1;
+  }
+  // Actualizar indicadores visuales
+  ['username','full_name','country_tag','followers','filter_score','status','dm_sent_date'].forEach(c => {
+    const el = document.getElementById('sort-' + c);
+    if (el) el.textContent = '';
+  });
+  const activeEl = document.getElementById('sort-' + col);
+  if (activeEl) activeEl.textContent = currentSort.dir === 1 ? '↑' : '↓';
+  renderLeads(currentFilter);
+}
+
 function renderLeads(f) {
   const visible = allLeads.filter(l => !dismissedLeads.has(l.username));
-  const list = f==='all' ? visible : visible.filter(l=>l.status===f);
+  let list = f==='all' ? visible : visible.filter(l=>l.status===f);
+  // Aplicar sort si hay columna activa
+  if (currentSort.col) {
+    const col = currentSort.col;
+    const dir = currentSort.dir;
+    list = [...list].sort((a, b) => {
+      let av = a[col] ?? '', bv = b[col] ?? '';
+      if (col === 'followers' || col === 'filter_score') {
+        av = parseFloat(av) || 0; bv = parseFloat(bv) || 0;
+        return (av - bv) * dir;
+      }
+      return String(av).localeCompare(String(bv), 'es') * dir;
+    });
+  }
   const lbl = {pending:'Pendiente',contacted:'Contactado',replied:'Respondió'};
   if (!list.length) { document.getElementById('leadsBody').innerHTML='<tr><td colspan="10" class="empty">Sin resultados</td></tr>'; return; }
   const rows = list.map(l => {
