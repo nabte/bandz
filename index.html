@@ -330,7 +330,11 @@ textarea:focus{border-color:var(--lime)}
                 Hashtag offset
                 <span style="color:var(--muted);font-weight:400"> — posición en la lista (avanza 3 por run)</span>
               </div>
-              <input type="number" id="f1Offset" value="0" min="0" onchange="saveRunConfig('hashtag_offset', this.value)" />
+              <div style="display:flex;gap:6px;align-items:center">
+                <input type="number" id="f1Offset" value="0" min="0" />
+                <button class="btn-save" onclick="saveRunConfig('hashtag_offset', document.getElementById('f1Offset').value)" style="padding:6px 12px;font-size:12px">Guardar</button>
+                <span class="saved-toast" id="toast-offset">✓</span>
+              </div>
             </div>
             <div style="margin-top:16px">
               <button class="btn-run" id="btnFlow1" onclick="runFlow1()">Iniciar</button>
@@ -355,7 +359,11 @@ textarea:focus{border-color:var(--lime)}
           <div class="run-controls">
             <div>
               <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Máx DMs</div>
-              <input type="number" id="f2MaxDms" value="60" min="1" max="200" onchange="saveRunConfig('max_dms', this.value)" />
+              <div style="display:flex;gap:6px;align-items:center">
+                <input type="number" id="f2MaxDms" value="60" min="1" max="200" />
+                <button class="btn-save" onclick="saveRunConfig('max_dms', document.getElementById('f2MaxDms').value)" style="padding:6px 12px;font-size:12px">Guardar</button>
+                <span class="saved-toast" id="toast-maxdms">✓</span>
+              </div>
             </div>
             <div style="margin-top:16px">
               <button class="btn-run" id="btnFlow2" onclick="runFlow2()">Enviar</button>
@@ -880,6 +888,10 @@ function saveRunConfig(key, value) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ key, value: String(value) })
+  }).then(() => {
+    const toastId = key === 'max_dms' ? 'toast-maxdms' : 'toast-offset';
+    const t = document.getElementById(toastId);
+    if (t) { t.style.display = 'inline'; setTimeout(() => t.style.display = 'none', 2000); }
   }).catch(() => {});
 }
 
