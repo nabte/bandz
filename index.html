@@ -355,7 +355,7 @@ textarea:focus{border-color:var(--lime)}
           <div class="run-controls">
             <div>
               <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Máx DMs</div>
-              <input type="number" id="f2MaxDms" value="5" min="1" max="25" />
+              <input type="number" id="f2MaxDms" value="60" min="1" max="200" />
             </div>
             <div style="margin-top:16px">
               <button class="btn-run" id="btnFlow2" onclick="runFlow2()">Enviar</button>
@@ -411,24 +411,24 @@ textarea:focus{border-color:var(--lime)}
         </div>
       </div>
 
-      <div class="cfg-card">
-        <h3>Credenciales Instagram</h3>
-        <div class="cfg-field">
-          <label>Session ID (cookie sessionid)</label>
-          <input type="text" id="cfg-session" placeholder="48156086874%3Axxx" />
+      <div class="cfg-card" id="ig-accounts-card">
+        <h3>Cuentas de Instagram</h3>
+        <div style="font-size:12px;color:var(--muted2);margin-bottom:14px">
+          Las cookies se guardan en n8n DataTable y son compartidas entre dispositivos.<br>
+          Los DMs se distribuyen equitativamente entre todas las cuentas activas.
         </div>
-        <div class="cfg-field">
-          <label>CSRF Token (cookie csrftoken)</label>
-          <input type="text" id="cfg-csrf" placeholder="0zHNQtQxxx" />
+        <div id="ig-accounts-list" style="margin-bottom:10px">
+          <div style="color:var(--muted2);font-size:13px">Cargando cuentas...</div>
         </div>
-        <div class="cfg-field">
-          <label>Cookies completas (JSON de EditThisCookie)</label>
-          <textarea id="cfg-cookies" placeholder='[{"name":"sessionid","value":"...","domain":".instagram.com",...}]'></textarea>
-        </div>
-        <button class="btn-save" onclick="saveCfg('ig')">Guardar credenciales IG</button>
-        <span class="saved-toast" id="toast-ig">✓</span>
-        <div style="margin-top:10px;font-size:12px;color:var(--muted2)">
-          Las cookies se guardan en este dispositivo (localStorage). Para usarlas en otro dispositivo, copialas manualmente.
+        <button class="btn-save" onclick="showAddIgAccount()">+ Agregar cuenta</button>
+        <span class="saved-toast" id="toast-ig-new">✓ Guardada</span>
+        <div id="ig-add-form" style="display:none;margin-top:14px;border-top:1px solid var(--border2);padding-top:14px">
+          <div class="cfg-field">
+            <label>Cookies JSON (exportadas con EditThisCookie de instagram.com)</label>
+            <textarea id="ig-new-cookies" placeholder='[{"name":"sessionid","value":"...","domain":".instagram.com",...}]' style="min-height:90px;font-size:12px;font-family:monospace"></textarea>
+          </div>
+          <button class="btn-save" onclick="saveNewIgAccount()">Guardar cuenta</button>
+          <button onclick="document.getElementById('ig-add-form').style.display='none'" style="margin-left:8px;background:none;border:none;color:var(--muted2);cursor:pointer;font-size:13px">Cancelar</button>
         </div>
       </div>
 
@@ -782,7 +782,7 @@ function runFlow1() {
 
 function runFlow2() {
   const url = ls('n8nUrl') || FALLBACK_N8N;
-  const maxDms = parseInt(document.getElementById('f2MaxDms').value) || 5;
+  const maxDms = parseInt(document.getElementById('f2MaxDms').value) || 60;
   const msg = document.getElementById('dmMessage').value || ls('dmMessage') || '';
   if (!msg) { showNotif('Falta el mensaje', 'Escribí el mensaje de contacto antes de enviar DMs.', 'warn', 5000); return; }
   const btn = document.getElementById('btnFlow2');
@@ -927,14 +927,93 @@ function loadRemoteConfig() {
         ls('schedFlow2', cfg.schedule_flow2_time);
         document.getElementById('schedFlow2').value = cfg.schedule_flow2_time;
       }
+      renderIgAccounts(cfg);
     })
-    .catch(() => {}); // si no hay conexión usa localStorage
+    .catch(() => {
+      const list = document.getElementById('ig-accounts-list');
+      if (list) list.innerHTML = '<div style="color:var(--muted2);font-size:13px">Sin conexión — no se pudieron cargar las cuentas</div>';
+    });
+}
+
+// ── IG ACCOUNTS MANAGER ──
+function renderIgAccounts(cfg) {
+  const list = document.getElementById('ig-accounts-list');
+  if (!list) return;
+  const accounts = Object.entries(cfg)
+    .filter(([k]) => /^ig_cookies_\d+$/.test(k))
+    .sort(([a], [b]) => parseInt(a.split('_').pop()) - parseInt(b.split('_').pop()))
+    .filter(([, v]) => v && v.trim() !== '' && v.trim() !== '[]');
+  list.innerHTML = '';
+  if (accounts.length === 0) {
+    list.innerHTML = '<div style="color:var(--muted2);font-size:13px;padding:6px 0">Sin cuentas configuradas. Agregá al menos una para enviar DMs.</div>';
+    return;
+  }
+  accounts.forEach(([key, val]) => {
+    const n = key.split('_').pop();
+    let label = `Cuenta ${n}`;
+    try {
+      const cookies = JSON.parse(val);
+      const dsUser = cookies.find(c => c.name === 'ds_user_id');
+      if (dsUser) label = `Cuenta ${n} · ID ${dsUser.value}`;
+    } catch(e) {}
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px;font-size:13px;';
+    div.innerHTML = `<span style="color:var(--text)">🍪 ${label}</span>
+      <button onclick="removeIgAccount('${key}')" style="background:none;border:1px solid var(--muted);color:var(--muted2);padding:3px 10px;border-radius:6px;cursor:pointer;font-size:12px">Eliminar</button>`;
+    list.appendChild(div);
+  });
+}
+
+function showAddIgAccount() {
+  const form = document.getElementById('ig-add-form');
+  form.style.display = 'block';
+  document.getElementById('ig-new-cookies').value = '';
+  document.getElementById('ig-new-cookies').focus();
+}
+
+function saveNewIgAccount() {
+  const val = document.getElementById('ig-new-cookies').value.trim();
+  if (!val) { alert('Pegá las cookies JSON primero.'); return; }
+  try { JSON.parse(val); } catch(e) { alert('JSON inválido. Verificá el formato de las cookies.'); return; }
+  const base = ls('n8nUrl') || FALLBACK_N8N;
+  fetch(base + '/get-config', { signal: AbortSignal.timeout(5000) })
+    .then(r => r.json())
+    .then(cfg => {
+      const existing = Object.keys(cfg)
+        .filter(k => /^ig_cookies_\d+$/.test(k))
+        .map(k => parseInt(k.split('_').pop()));
+      const nextN = existing.length > 0 ? Math.max(...existing) + 1 : 1;
+      return fetch(base + '/save-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: `ig_cookies_${nextN}`, value: val })
+      });
+    })
+    .then(() => {
+      document.getElementById('ig-add-form').style.display = 'none';
+      const t = document.getElementById('toast-ig-new');
+      t.style.display = 'inline'; setTimeout(() => t.style.display = 'none', 2500);
+      loadRemoteConfig();
+    })
+    .catch(err => alert('Error al guardar: ' + err.message));
+}
+
+function removeIgAccount(key) {
+  if (!confirm(`¿Eliminar ${key}?`)) return;
+  const base = ls('n8nUrl') || FALLBACK_N8N;
+  fetch(base + '/save-config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, value: '' })
+  })
+  .then(() => loadRemoteConfig())
+  .catch(err => alert('Error: ' + err.message));
 }
 
 
 // ── CONFIG ──
 function loadConfig() {
-  const map = { 'n8n':'n8nUrl', 'session':'igSession', 'csrf':'igCsrf', 'cookies':'igCookies', 'apify':'apifyToken', 'sheet':'sheetId' };
+  const map = { 'n8n':'n8nUrl' };
   Object.entries(map).forEach(([id, key]) => {
     const el = document.getElementById('cfg-' + id);
     if (!el) return;
@@ -956,9 +1035,7 @@ function loadConfig() {
 
 function saveCfg(group) {
   const map = {
-    n8n: [['n8n','n8nUrl']],
-    ig: [['session','igSession'],['csrf','igCsrf'],['cookies','igCookies']],
-    apify: [['apify','apifyToken'],['sheet','sheetId']]
+    n8n: [['n8n','n8nUrl']]
   };
   (map[group]||[]).forEach(([id,key]) => {
     const el = document.getElementById('cfg-' + id);
