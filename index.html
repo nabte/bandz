@@ -625,7 +625,7 @@ function renderActivity() {
       <div><span class="act-user">@${l.username}</span> <span class="cbadge">${l.country_tag}</span></div>
       <div style="display:flex;gap:8px;align-items:center">
         <span class="badge ${l.status}">${l.status==='contacted'?'Contactado':'DM'}</span>
-        <span class="act-date">${l.dm_sent_date||''}</span>
+        <span class="act-date">${fmtDate(l.dm_sent_date)}</span>
       </div>
     </div>`
   ).join('');
@@ -654,6 +654,15 @@ function dismissLead(username) {
   .then(r => r.json())
   .then(() => showNotif('Lead descartado', '@' + username + ' marcado como "skip" — no recibirá DM.', 'ok', 4000))
   .catch(() => showNotif('Solo oculto localmente', '@' + username + ' no se pudo actualizar en la tabla. Verificá el webhook /update-lead en n8n.', 'warn', 6000));
+}
+
+function fmtDate(d) {
+  if (!d) return '-';
+  try {
+    const dt = new Date(d);
+    if (isNaN(dt)) return d;
+    return dt.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch(e) { return d; }
 }
 
 function sortLeads(col) {
@@ -703,7 +712,7 @@ function renderLeads(f) {
       <td>${Number(l.followers||0).toLocaleString()}</td>
       <td><span style="font-size:13px;font-weight:700;color:${scoreColor}">${score||'-'}</span></td>
       <td><span class="badge ${l.status||'pending'}">${lbl[l.status]||l.status}</span></td>
-      <td style="font-size:12px;color:var(--muted2)">${l.dm_sent_date||'-'}</td>
+      <td style="font-size:12px;color:var(--muted2)">${fmtDate(l.dm_sent_date)}</td>
       <td><a class="ig-link" href="${l.profile_url||'#'}" target="_blank" rel="noopener noreferrer">Ver →</a></td>
       <td></td>`;
     // botón dismiss creado via DOM para evitar inline handler con username
