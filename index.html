@@ -199,11 +199,11 @@ textarea:focus{border-color:var(--lime)}
       </div>
     </div>
     <label>Usuario</label>
-    <input type="text" id="loginUser" placeholder="admin" />
+    <input type="text" id="loginUser" placeholder="bandaz" />
     <label>Contraseña</label>
     <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
     <button class="btn-primary" onclick="doLogin()">Ingresar</button>
-    <div class="login-err" id="loginErr">Contraseña incorrecta</div>
+    <div class="login-err" id="loginErr">Usuario o contraseña incorrectos</div>
   </div>
 </div>
 
@@ -449,9 +449,10 @@ dismissedLeads = new Set(ls('dismissedLeads') || []);
 
 // ── LOGIN ──
 function doLogin() {
+  const u = document.getElementById('loginUser').value.trim().toLowerCase();
   const p = document.getElementById('loginPass').value;
   const stored = ls('password') || DEFAULT_PASS;
-  if (p === stored) {
+  if (u === 'bandaz' && p === stored) {
     ls('loggedIn', true);
     document.getElementById('loginWrap').style.display = 'none';
     document.getElementById('appWrap').style.display = 'flex';
