@@ -152,6 +152,20 @@ textarea:focus{border-color:var(--lime)}
 .btn-dismiss{background:none;border:1px solid var(--border2);border-radius:5px;color:var(--muted);font-size:13px;padding:2px 8px;cursor:pointer;transition:.1s;line-height:1}
 .btn-dismiss:hover{background:rgba(248,113,113,.15);border-color:var(--red);color:var(--red)}
 
+/* ── HASHTAG CHIPS ── */
+.ht-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.ht-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border2);color:var(--muted2);background:var(--surface2);user-select:none;transition:.12s}
+.ht-chip:hover{border-color:var(--muted);color:var(--text)}
+.ht-chip.active{border-color:var(--lime);color:var(--lime);background:rgba(200,241,53,.1)}
+.ht-chip input{display:none}
+.ht-add{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.ht-add input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:7px 10px;color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;outline:none}
+.ht-add input:focus{border-color:var(--lime)}
+.ht-add button{background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:7px 12px;color:var(--text);font-size:13px;cursor:pointer;white-space:nowrap;font-family:'Barlow',sans-serif}
+.ht-add button:hover{border-color:var(--lime);color:var(--lime)}
+.profiles-info{font-size:11px;color:var(--muted2);margin-top:5px;line-height:1.6}
+.profiles-info span{color:var(--lime);font-weight:600}
+
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:var(--bg)}
@@ -275,11 +289,14 @@ textarea:focus{border-color:var(--lime)}
 
       <div class="section-head">
         <span class="section-title">Leads</span>
-        <div class="filters">
-          <button class="f-btn active" onclick="filterLeads('all',this)">Todos</button>
-          <button class="f-btn" onclick="filterLeads('pending',this)">Pendientes</button>
-          <button class="f-btn" onclick="filterLeads('contacted',this)">Contactados</button>
-          <button class="f-btn" onclick="filterLeads('ya_seguido',this)" style="border-color:rgba(124,58,237,.4);color:var(--purple)">Ya Seguidos</button>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button onclick="exportCSV()" style="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:5px 14px;color:var(--muted2);font-size:13px;cursor:pointer;font-family:'Barlow',sans-serif;transition:.1s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted2)'" title="Exportar leads visibles como CSV">↓ Exportar CSV</button>
+          <div class="filters">
+            <button class="f-btn active" onclick="filterLeads('all',this)">Todos</button>
+            <button class="f-btn" onclick="filterLeads('pending',this)">Pendientes</button>
+            <button class="f-btn" onclick="filterLeads('contacted',this)">Contactados</button>
+            <button class="f-btn" onclick="filterLeads('ya_seguido',this)" style="border-color:rgba(124,58,237,.4);color:var(--purple)">Ya Seguidos</button>
+          </div>
         </div>
       </div>
       <div class="card">
@@ -334,13 +351,19 @@ textarea:focus{border-color:var(--lime)}
           <h3>Flow 01 — Búsqueda</h3>
           <p>Scraping de Instagram por hashtags. Filtra bandas reales y guarda en la tabla bandaz.</p>
           <div class="run-controls">
-            <div>
-              <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">
-                Hashtag offset
-                <span style="color:var(--muted);font-weight:400"> — posición en la lista (avanza 3 por run)</span>
-              </div>
+            <div style="width:100%">
+              <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Perfiles a encontrar por ronda</div>
               <div style="display:flex;gap:6px;align-items:center">
-                <input type="number" id="f1Offset" value="0" min="0" />
+                <input type="number" id="f1Profiles" value="40" min="10" max="300" style="width:72px" oninput="updateF1Calc()" />
+                <button class="btn-save" onclick="saveRunConfig('max_profiles', document.getElementById('f1Profiles').value)" style="padding:6px 12px;font-size:12px">Guardar</button>
+                <span class="saved-toast" id="toast-profiles">✓</span>
+              </div>
+              <div class="profiles-info">Posts/hashtag calculados: <span id="f1PostsCalc">~45</span> &nbsp;·&nbsp; Offset: <span id="f1OffsetDisplay">0</span></div>
+            </div>
+            <div style="width:100%;margin-top:8px">
+              <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">Offset <span style="color:var(--muted);font-weight:400">— posición en lista de hashtags</span></div>
+              <div style="display:flex;gap:6px;align-items:center">
+                <input type="number" id="f1Offset" value="0" min="0" style="width:60px" oninput="updateF1Calc()" />
                 <button class="btn-save" onclick="saveRunConfig('hashtag_offset', document.getElementById('f1Offset').value)" style="padding:6px 12px;font-size:12px">Guardar</button>
                 <span class="saved-toast" id="toast-offset">✓</span>
               </div>
@@ -470,6 +493,24 @@ textarea:focus{border-color:var(--lime)}
         </div>
       </div>
 
+      <div class="cfg-card" id="hashtags-card">
+        <h3>Hashtags de búsqueda <span id="hashtag-count" style="font-size:13px;color:var(--lime);font-family:'Barlow',sans-serif;margin-left:10px;font-weight:400">32 activos</span></h3>
+        <div style="font-size:12px;color:var(--muted2);margin-bottom:14px;line-height:1.6">
+          Tildá los que querés usar. Podés agregar hashtags nuevos con el campo de abajo — se van a usar rotando de a 3 por ronda.
+        </div>
+        <div class="ht-add">
+          <input type="text" id="new-hashtag-input" placeholder="Agregar hashtag nuevo (sin #)" onkeydown="if(event.key==='Enter')addNewHashtag()" />
+          <button onclick="addNewHashtag()">+ Agregar</button>
+        </div>
+        <div class="ht-grid" id="hashtag-chips"></div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn-save" onclick="saveHashtags()">Guardar en n8n</button>
+          <button onclick="selectAllHashtags(true)" style="background:none;border:none;color:var(--muted2);font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif">Todos</button>
+          <button onclick="selectAllHashtags(false)" style="background:none;border:none;color:var(--muted2);font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif">Ninguno</button>
+          <span class="saved-toast" id="toast-hashtags">✓ Guardado</span>
+        </div>
+      </div>
+
 <!-- Se eliminó la sección de parámetros de Apify para centralizar en n8n -->
 
       <div class="cfg-card">
@@ -489,6 +530,7 @@ textarea:focus{border-color:var(--lime)}
 <script>
 const DEFAULT_PASS = 'bandas2025';
 const FALLBACK_N8N = 'https://bandz-n8n.aiq3il.easypanel.host/webhook';
+const ALL_HASHTAGS = ["rockargentino","bandarock","metalargentino","bluesargentino","jazzargentino","indieargentino","punkargentino","folkargentino","rockchileno","metalchile","indiechile","rockmexico","bandamexico","metalmexico","indiemexico","jazzmexico","rockcolombia","indiecolombia","metalcolombia","rockuruguay","rockperu","rockvenezuela","rockcr","rockparaguay","indielatam","alternativolatam","postpunklatam","shoegazelatam","grungelatam","hardrocklat","progresivometal","newwavelatam"];
 let allLeads = [];
 let currentSort = { col: null, dir: 1 };
 let currentFilter = 'all';
@@ -559,7 +601,7 @@ function showTab(name, btn) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   btn.classList.add('active');
-  if (name === 'config') loadConfig();
+  if (name === 'config') { loadConfig(); renderHashtagPanel(); }
 }
 
 // ── DATA ──
@@ -759,6 +801,105 @@ function renderLeads(f) {
   rows.forEach(r => tbody.appendChild(r));
 }
 
+// ── EXPORT CSV ──
+function exportCSV() {
+  const visible = allLeads.filter(l => !dismissedLeads.has(l.username));
+  const list = currentFilter === 'all' ? visible : visible.filter(l => l.status === currentFilter);
+  if (!list.length) { showNotif('Sin datos', 'No hay leads para exportar con el filtro actual.', 'warn', 4000); return; }
+  const cols = ['username','full_name','country_tag','followers','filter_score','status','dm_sent_date','bio','website','profile_url'];
+  const header = cols.join(',');
+  const rows = list.map(l => cols.map(c => '"' + String(l[c] || '').replace(/"/g, '""') + '"').join(','));
+  const csv = [header, ...rows].join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'bandas_leads_' + new Date().toISOString().slice(0,10) + '.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showNotif('Exportado', list.length + ' leads exportados como CSV.', 'ok', 4000);
+}
+
+// ── HASHTAGS ──
+function renderHashtagPanel() {
+  const enabledList = ls('hashtagsEnabled') || ALL_HASHTAGS;
+  const enabledSet = new Set(enabledList);
+  const allKnown = ls('allHashtagsList') || ALL_HASHTAGS;
+  const container = document.getElementById('hashtag-chips');
+  if (!container) return;
+  container.replaceChildren();
+  allKnown.forEach(tag => {
+    const on = enabledSet.has(tag);
+    const chip = document.createElement('label');
+    chip.className = 'ht-chip' + (on ? ' active' : '');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = on; cb.dataset.tag = tag;
+    cb.addEventListener('change', () => toggleHashtag(tag, cb.checked));
+    chip.appendChild(cb);
+    chip.appendChild(document.createTextNode('#' + tag));
+    container.appendChild(chip);
+  });
+  updateHashtagCount();
+}
+
+function toggleHashtag(tag, checked) {
+  const enabled = new Set(ls('hashtagsEnabled') || ALL_HASHTAGS);
+  if (checked) enabled.add(tag); else enabled.delete(tag);
+  ls('hashtagsEnabled', [...enabled]);
+  const chip = document.querySelector('[data-tag="' + tag + '"]')?.parentElement;
+  if (chip) chip.className = 'ht-chip' + (checked ? ' active' : '');
+  updateHashtagCount();
+  updateF1Calc();
+}
+
+function selectAllHashtags(enable) {
+  const allKnown = ls('allHashtagsList') || ALL_HASHTAGS;
+  ls('hashtagsEnabled', enable ? [...allKnown] : []);
+  renderHashtagPanel();
+  updateF1Calc();
+}
+
+function addNewHashtag() {
+  const input = document.getElementById('new-hashtag-input');
+  const tag = (input.value || '').trim().replace(/^#/, '').toLowerCase();
+  if (!tag) return;
+  const allKnown = [...(ls('allHashtagsList') || ALL_HASHTAGS)];
+  if (!allKnown.includes(tag)) { allKnown.push(tag); ls('allHashtagsList', allKnown); }
+  const enabled = new Set(ls('hashtagsEnabled') || ALL_HASHTAGS);
+  enabled.add(tag); ls('hashtagsEnabled', [...enabled]);
+  input.value = '';
+  renderHashtagPanel();
+  showNotif('Hashtag agregado', '#' + tag + ' agregado. Guardá en n8n para que el flow lo use.', 'ok', 4000);
+}
+
+function updateHashtagCount() {
+  const el = document.getElementById('hashtag-count');
+  if (el) { const e = ls('hashtagsEnabled') || ALL_HASHTAGS; el.textContent = e.length + ' activos'; }
+}
+
+function updateF1Calc() {
+  const profiles = parseInt(document.getElementById('f1Profiles')?.value) || 40;
+  const enabled = ls('hashtagsEnabled') || ALL_HASHTAGS;
+  const perHashtag = Math.min(Math.ceil(profiles / 0.30 / 3), 200);
+  const calc = document.getElementById('f1PostsCalc');
+  if (calc) calc.textContent = '~' + perHashtag;
+  const off = parseInt(document.getElementById('f1Offset')?.value) || 0;
+  const disp = document.getElementById('f1OffsetDisplay');
+  if (disp) disp.textContent = off + ' / ' + enabled.length + ' habilitados';
+}
+
+function saveHashtags() {
+  const base = ls('n8nUrl') || FALLBACK_N8N;
+  const enabled = ls('hashtagsEnabled') || ALL_HASHTAGS;
+  fetch(base + '/save-config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key: 'hashtags_enabled', value: JSON.stringify(enabled) })
+  }).then(() => {
+    const t = document.getElementById('toast-hashtags');
+    if (t) { t.style.display = 'inline'; setTimeout(() => t.style.display = 'none', 2000); }
+    showNotif('Hashtags guardados', enabled.length + ' hashtags activos guardados en n8n.', 'ok', 4000);
+  }).catch(err => showNotif('Error al guardar', err.message, 'err', 5000));
+}
+
 // ── NOTIFICACIONES ──
 let _notifTimer = null;
 function showNotif(title, msg, type, autoDismiss) {
@@ -804,19 +945,27 @@ function runFlow1() {
   statusEl.classList.add('show');
   statusText.textContent = 'Enviando a n8n...';
 
+  const targetProfiles = parseInt(document.getElementById('f1Profiles').value) || 40;
+  const enabledHashtags = ls('hashtagsEnabled') || ALL_HASHTAGS;
+  const BATCH = 3;
+  const batchHashtags = Array.from({ length: BATCH }, (_, i) => enabledHashtags[(offset + i) % enabledHashtags.length]);
+  const resultsPerHashtag = Math.min(Math.ceil(targetProfiles / 0.30 / BATCH), 200);
+
   fetch(url + '/run-flow1', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       offset,
-      hashtags_batch: 3,
-      results_per_hashtag: 30
+      hashtags_batch: BATCH,
+      results_per_hashtag: resultsPerHashtag,
+      hashtags: batchHashtags,
+      max_profiles: targetProfiles
     })
   })
   .then(r => r.json())
   .then(() => {
     // n8n responde de inmediato — el flow corre en background (~90 seg)
-    const nextOff = offset + 3 >= 32 ? 0 : offset + 3;
+    const nextOff = offset + BATCH >= enabledHashtags.length ? 0 : offset + BATCH;
     ls('hashtagOffset', nextOff);
     document.getElementById('f1Offset').value = nextOff;
     document.getElementById('currentOffset').textContent = nextOff;
@@ -953,14 +1102,16 @@ function saveMessage() {
 }
 
 function saveRunConfig(key, value) {
-  ls(key === 'max_dms' ? 'maxDms' : 'hashtagOffset', value);
+  const lsKey = key === 'max_dms' ? 'maxDms' : key === 'max_profiles' ? 'maxProfiles' : 'hashtagOffset';
+  ls(lsKey, value);
+  if (key === 'max_profiles' || key === 'hashtag_offset') updateF1Calc();
   const base = ls('n8nUrl') || FALLBACK_N8N;
   fetch(base + '/save-config', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ key, value: String(value) })
   }).then(() => {
-    const toastId = key === 'max_dms' ? 'toast-maxdms' : 'toast-offset';
+    const toastId = key === 'max_dms' ? 'toast-maxdms' : key === 'max_profiles' ? 'toast-profiles' : 'toast-offset';
     const t = document.getElementById(toastId);
     if (t) { t.style.display = 'inline'; setTimeout(() => t.style.display = 'none', 2000); }
   }).catch(() => {});
@@ -1029,10 +1180,23 @@ function loadRemoteConfig() {
         if (ta) ta.value = cfg.target_accounts;
       }
       renderIgAccounts(cfg);
+      if (cfg.hashtags_enabled) {
+        try {
+          const h = JSON.parse(cfg.hashtags_enabled);
+          if (Array.isArray(h) && h.length > 0) ls('hashtagsEnabled', h);
+        } catch(e) {}
+      }
+      if (cfg.max_profiles && parseInt(cfg.max_profiles) > 0) {
+        const p = document.getElementById('f1Profiles');
+        if (p) p.value = parseInt(cfg.max_profiles);
+        ls('maxProfiles', cfg.max_profiles);
+      }
+      renderHashtagPanel();
+      updateF1Calc();
     })
     .catch(() => {
       const list = document.getElementById('ig-accounts-list');
-      if (list) list.innerHTML = '<div style="color:var(--muted2);font-size:13px">Sin conexión — no se pudieron cargar las cuentas</div>';
+      if (list) { list.replaceChildren(); const d = document.createElement('div'); d.style.cssText = 'color:var(--muted2);font-size:13px'; d.textContent = 'Sin conexión — no se pudieron cargar las cuentas'; list.appendChild(d); }
     });
 }
 
@@ -1166,6 +1330,10 @@ function loadConfig() {
   document.getElementById('currentOffset').textContent = off;
   const maxDms = ls('maxDms');
   if (maxDms) document.getElementById('f2MaxDms').value = parseInt(maxDms);
+  const maxProfiles = ls('maxProfiles');
+  if (maxProfiles) { const p = document.getElementById('f1Profiles'); if (p) p.value = parseInt(maxProfiles); }
+  renderHashtagPanel();
+  updateF1Calc();
   const schedEn = ls('schedEnabled');
   if (schedEn !== null) document.getElementById('schedEnabled').checked = schedEn === true || schedEn === 'true';
   const f1t = ls('schedFlow1');
