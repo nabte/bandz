@@ -296,6 +296,7 @@ textarea:focus{border-color:var(--lime)}
             <button class="f-btn" onclick="filterLeads('pending',this)">Pendientes</button>
             <button class="f-btn" onclick="filterLeads('contacted',this)">Contactados</button>
             <button class="f-btn" onclick="filterLeads('ya_seguido',this)" style="border-color:rgba(124,58,237,.4);color:var(--purple)">Ya Seguidos</button>
+            <button class="f-btn" id="btn-dismissed" onclick="filterLeads('dismissed',this)" style="border-color:rgba(100,100,100,.4);color:var(--muted2)">Descartados</button>
           </div>
         </div>
       </div>
@@ -668,11 +669,10 @@ function renderAll() {
 }
 
 function renderStats() {
-  const visible = allLeads.filter(l => !dismissedLeads.has(l.username));
-  document.getElementById('s-total').textContent = visible.length;
-  document.getElementById('s-pending').textContent = visible.filter(l => l.status === 'pending').length;
-  document.getElementById('s-contacted').textContent = visible.filter(l => l.status === 'contacted').length;
-  document.getElementById('s-ya-seguido').textContent = visible.filter(l => l.status === 'ya_seguido').length;
+  document.getElementById('s-total').textContent = allLeads.length;
+  document.getElementById('s-pending').textContent = allLeads.filter(l => l.status === 'pending').length;
+  document.getElementById('s-contacted').textContent = allLeads.filter(l => l.status === 'contacted').length;
+  document.getElementById('s-ya-seguido').textContent = allLeads.filter(l => l.status === 'ya_seguido').length;
 }
 
 function renderCountry() {
@@ -729,6 +729,14 @@ function dismissLead(username) {
   .catch(() => showNotif('Solo oculto localmente', '@' + username + ' no se pudo actualizar en la tabla. Verificá el webhook /update-lead en n8n.', 'warn', 6000));
 }
 
+function restoreLead(username) {
+  dismissedLeads.delete(username);
+  ls('dismissedLeads', [...dismissedLeads]);
+  renderLeads(currentFilter);
+  renderStats();
+  showNotif('Lead restaurado', '@' + username + ' vuelve a la lista activa.', 'ok', 3000);
+}
+
 function fmtDate(d) {
   if (!d) return '-';
   try {
@@ -756,8 +764,11 @@ function sortLeads(col) {
 }
 
 function renderLeads(f) {
-  const visible = allLeads.filter(l => !dismissedLeads.has(l.username));
-  let list = f==='all' ? visible : visible.filter(l=>l.status===f);
+  const isDismissedTab = f === 'dismissed';
+  const visible = isDismissedTab
+    ? allLeads.filter(l => dismissedLeads.has(l.username))
+    : allLeads.filter(l => !dismissedLeads.has(l.username));
+  let list = (f === 'all' || isDismissedTab) ? visible : visible.filter(l => l.status === f);
   // Aplicar sort si hay columna activa
   if (currentSort.col) {
     const col = currentSort.col;
@@ -788,12 +799,20 @@ function renderLeads(f) {
       <td style="font-size:12px;color:var(--muted2)">${fmtDate(l.dm_sent_date)}</td>
       <td><a class="ig-link" href="${l.profile_url||'#'}" target="_blank" rel="noopener noreferrer">Ver →</a></td>
       <td></td>`;
-    // botón dismiss creado via DOM para evitar inline handler con username
+    // botón dismiss / restore creado via DOM
     const btn = document.createElement('button');
-    btn.className = 'btn-dismiss';
-    btn.title = 'Ocultar este lead';
-    btn.textContent = '×';
-    btn.addEventListener('click', () => dismissLead(l.username));
+    if (isDismissedTab) {
+      btn.className = 'btn-dismiss';
+      btn.title = 'Restaurar lead';
+      btn.textContent = '↩';
+      btn.style.color = 'var(--lime)';
+      btn.addEventListener('click', () => restoreLead(l.username));
+    } else {
+      btn.className = 'btn-dismiss';
+      btn.title = 'Ocultar este lead';
+      btn.textContent = '×';
+      btn.addEventListener('click', () => dismissLead(l.username));
+    }
     tr.querySelector('td:last-child').appendChild(btn);
     return tr;
   });
