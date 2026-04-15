@@ -381,7 +381,6 @@ textarea:focus{border-color:var(--lime)}
           </div>
           <div style="font-size:11px;color:var(--muted);margin-top:8px">
             Próximo offset: <span id="currentOffset" style="color:var(--lime)">0</span>
-            <span style="color:var(--muted)"> / 32 hashtags totales</span>
           </div>
         </div>
 
@@ -429,6 +428,28 @@ textarea:focus{border-color:var(--lime)}
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:10px">
           n8n verifica cada 5 min. Requiere que <strong style="color:var(--muted2)">Flow 05 — Scheduler</strong> esté activo en n8n.
+        </div>
+      </div>
+
+      <!-- HASHTAGS PANEL -->
+      <div class="run-card" style="margin-top:4px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <h3 style="margin:0">Hashtags de búsqueda</h3>
+          <span id="hashtag-count" style="font-size:13px;color:var(--lime);font-family:'Barlow',sans-serif;font-weight:400">32 activos</span>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button onclick="selectAllHashtags(true)" style="background:none;border:1px solid var(--border2);border-radius:6px;color:var(--muted2);font-size:12px;cursor:pointer;padding:3px 10px;font-family:'Barlow',sans-serif">Todos</button>
+            <button onclick="selectAllHashtags(false)" style="background:none;border:1px solid var(--border2);border-radius:6px;color:var(--muted2);font-size:12px;cursor:pointer;padding:3px 10px;font-family:'Barlow',sans-serif">Ninguno</button>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted2);margin-bottom:12px">Tildá los que querés usar. Se rotan de a 3 por ronda según el offset.</div>
+        <div class="ht-add">
+          <input type="text" id="new-hashtag-input" placeholder="Agregar hashtag nuevo (sin #)" onkeydown="if(event.key==='Enter')addNewHashtag()" />
+          <button onclick="addNewHashtag()">+ Agregar</button>
+        </div>
+        <div class="ht-grid" id="hashtag-chips"></div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn-run" onclick="saveHashtags()">Guardar en n8n</button>
+          <span class="saved-toast" id="toast-hashtags">✓ Guardado</span>
         </div>
       </div>
 
@@ -484,30 +505,10 @@ textarea:focus{border-color:var(--lime)}
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <button class="btn-save" onclick="saveTargetAccounts()">Guardar</button>
-          <button class="btn-save" id="btnScrape" onclick="scrapeFollowings()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border2)">Scrapear ahora</button>
           <span class="saved-toast" id="toast-target">✓ Guardado</span>
-          <span class="saved-toast" id="toast-scrape" style="color:var(--blue)">Iniciado...</span>
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:8px">
-          "Scrapear ahora" guarda en <code style="color:var(--muted2)">seguidos_por_vendedores</code> vía Flow 06. Puede tardar varios minutos según la cantidad de cuentas.
-        </div>
-      </div>
-
-      <div class="cfg-card" id="hashtags-card">
-        <h3>Hashtags de búsqueda <span id="hashtag-count" style="font-size:13px;color:var(--lime);font-family:'Barlow',sans-serif;margin-left:10px;font-weight:400">32 activos</span></h3>
-        <div style="font-size:12px;color:var(--muted2);margin-bottom:14px;line-height:1.6">
-          Tildá los que querés usar. Podés agregar hashtags nuevos con el campo de abajo — se van a usar rotando de a 3 por ronda.
-        </div>
-        <div class="ht-add">
-          <input type="text" id="new-hashtag-input" placeholder="Agregar hashtag nuevo (sin #)" onkeydown="if(event.key==='Enter')addNewHashtag()" />
-          <button onclick="addNewHashtag()">+ Agregar</button>
-        </div>
-        <div class="ht-grid" id="hashtag-chips"></div>
-        <div style="display:flex;gap:10px;align-items:center">
-          <button class="btn-save" onclick="saveHashtags()">Guardar en n8n</button>
-          <button onclick="selectAllHashtags(true)" style="background:none;border:none;color:var(--muted2);font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif">Todos</button>
-          <button onclick="selectAllHashtags(false)" style="background:none;border:none;color:var(--muted2);font-size:12px;cursor:pointer;font-family:'Barlow',sans-serif">Ninguno</button>
-          <span class="saved-toast" id="toast-hashtags">✓ Guardado</span>
+          Los seguidos se importan manualmente con <code style="color:var(--muted2)">node import_a1.js</code> desde la carpeta <code style="color:var(--muted2)">a1/</code>.
         </div>
       </div>
 
