@@ -823,9 +823,8 @@ function renderLeads(f) {
 
 // ── EXPORT CSV ──
 function exportCSV() {
-  const visible = allLeads.filter(l => !dismissedLeads.has(l.username));
-  const list = currentFilter === 'all' ? visible : visible.filter(l => l.status === currentFilter);
-  if (!list.length) { showNotif('Sin datos', 'No hay leads para exportar con el filtro actual.', 'warn', 4000); return; }
+  const list = allLeads.filter(l => !dismissedLeads.has(l.username));
+  if (!list.length) { showNotif('Sin datos', 'No hay leads para exportar.', 'warn', 4000); return; }
   const cols = ['username','full_name','country_tag','followers','filter_score','status','dm_sent_date','bio','website','profile_url'];
   const header = cols.join(',');
   const rows = list.map(l => cols.map(c => '"' + String(l[c] || '').replace(/"/g, '""') + '"').join(','));
